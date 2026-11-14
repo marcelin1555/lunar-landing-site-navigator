@@ -66,6 +66,8 @@ You can:
 
 You can also compare up to three sites for the next 30 days from any date.
 
+A month-by-month strip shows, for any site, the share of hours with Sun, with Earth and with both in every month from November 2026 to December 2028. If the landing slips, you see at once which month still works: at Malapert, Sun and Earth together go from 37% of hours in April 2028 to 80% in October 2028.
+
 For students and the public, a four-step tour, "Why the south pole is hard", explains why the pole is so unlike Earth: the Sun circles the horizon instead of rising, a few kilometres separate constant light from permanent shadow, Earth hides behind hills, and nights last days. Each step has a "Show me" button that sets the app to the case that proves it.
 
 > *Português:* Perto do polo sul lunar o Sol fica sempre a poucos graus do horizonte, e a Terra oscila acima e abaixo dele. Uma colina a 10 km pode decidir se uma sonda tem energia ou consegue falar com a Terra. Estimativas com horizonte plano não bastam.
@@ -86,6 +88,8 @@ For students and the public, a four-step tour, "Why the south pole is hard", exp
 > - clicar no mapa 3D.
 >
 > Também dá para comparar até três locais nos próximos 30 dias a partir de qualquer data.
+>
+> Uma faixa mês a mês mostra, para qualquer local, a fração das horas com Sol, com Terra e com os dois em cada mês de novembro de 2026 a dezembro de 2028. Se o pouso atrasar, dá para ver na hora qual mês ainda serve: em Malapert, Sol e Terra juntos vão de 37% das horas em abril de 2028 a 80% em outubro de 2028.
 >
 > Para estudantes e o público, um tour de quatro passos, "Why the south pole is hard", explica por que o polo é tão diferente da Terra: o Sol gira em volta do horizonte em vez de nascer, poucos quilômetros separam luz constante de sombra permanente, a Terra se esconde atrás dos morros e as noites duram dias. Cada passo tem um botão "Show me" que coloca o app no caso que prova a ideia.
 

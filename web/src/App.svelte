@@ -7,6 +7,7 @@
   import Map3D from "./lib/Map3D.svelte";
   import Compare from "./lib/Compare.svelte";
   import Learn from "./lib/Learn.svelte";
+  import Months from "./lib/Months.svelte";
   import { computePoint, loadSaved, save, newId, validate, sunDirAt, type CustomPoint } from "./lib/custom";
   import {
     loadIndex, loadSite, indexAt, hoursUntilChange, sunUp, earthUp, horizonAt,
@@ -326,6 +327,16 @@
         <Timeline {site} index={i} onpick={(d) => (date = d)} />
       </figure>
 
+      {#if !sunNever}
+        <figure id="months">
+          <figcaption>
+            Month by month, Nov 2026 to Dec 2028: if the landing slips, which month still works? Click a month to move the selected time there.
+            <span class="key"><i class="k-sun"></i>Sun <i class="k-earth"></i>Earth <i class="k-both"></i>both at once · darker = less</span>
+          </figcaption>
+          <Months {site} {date} onpick={(d) => (date = d)} />
+        </figure>
+      {/if}
+
       <footer>
         <p><strong>Site source:</strong> {site.source}.</p>
         {#if points.some((p) => p.id === site?.id)}
@@ -420,6 +431,7 @@
   .k-terrain { height: 8px !important; border-top: 2px solid var(--ridge); background: var(--terrain) !important; }
   .k-sun { background: var(--sun); }
   .k-earth { background: var(--earth); }
+  .k-both { background: var(--text); }
   .k-dot { width: 8px !important; height: 8px !important; border-radius: 50%; background: var(--text-soft); }
   footer { border-top: 1px solid var(--line); padding-top: 14px; color: var(--text-dim); font-size: 12px; line-height: 1.6; max-width: 90ch; }
   footer strong { color: var(--text-soft); font-weight: 600; }

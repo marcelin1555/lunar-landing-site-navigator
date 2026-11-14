@@ -24,6 +24,8 @@ The pipeline (`pipeline/`, Python) writes one JSON file per site. The web app (`
 - Sun and Earth paths match exactly.
 - Sunlit share differs by 1.5 points on average.
 
+**Month by month.** For the selected site the app shows every calendar month from November 2026 to December 2028, with the share of hours with Sun, with Earth and with both. Click a month to move there. This answers the schedule question: if the landing slips, which month still works? At Malapert Massif, for example, Sun and Earth together range from 37% of hours (April 2028) to 80% (October 2028).
+
 On sharp summits the horizon is the slope just below the observer, so Earth visibility there is sensitive to DEM resolution. The app says so.
 
 Crater floors such as Shackleton, Haworth and Faustini come out at 0% Sun and 0% Earth. These are permanently shadowed regions, where water ice may be.
