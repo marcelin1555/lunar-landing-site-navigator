@@ -1,32 +1,45 @@
 <script lang="ts">
-  import { onMount } from "svelte";
+  import { onMount, type Snippet } from "svelte";
   import * as THREE from "three";
   import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
   import { fromStereo, stereoSouth } from "./free";
   import type { SiteIndex } from "./data";
 
-  let { sites, selected, sunLon, busy = false, onpick, onselect }: {
-    busy?: boolean;
+  let { sites, selected, sunDir, busy = false, onpick, onselect, children }: {
     sites: SiteIndex[];
     selected: string;
-    sunLon: number | null; // longitude of the subsolar direction, drives the light azimuth
+    sunDir: [number, number, number] | null; // unit vector to the Sun, MOON_ME frame
+    busy?: boolean;
     onpick: (lat: number, lon: number) => void;
     onselect: (id: string) => void;
+    children?: Snippet;
   } = $props();
 
-  const EXAG = 4; // vertical exaggeration
+  // Scene frame (km): the real curved surface, south pole at the origin, local "up" = away from the Moon's center.
+  // MOON_ME (x, y, z) -> scene (y, -z - R, -x): a proper rotation, so the Sun vector maps the same way.
+  const R = 1737.4;
+  const toScene = (p: [number, number, number]) => new THREE.Vector3(p[1], -p[2] - R, -p[0]);
+  const meOf = (lat: number, lon: number, hKm: number): [number, number, number] => {
+    const la = (lat * Math.PI) / 180, lo = (lon * Math.PI) / 180, r = R + hKm;
+    return [r * Math.cos(la) * Math.cos(lo), r * Math.cos(la) * Math.sin(lo), r * Math.sin(la)];
+  };
+
+  type Mode = "now" | "mean";
+  let mode = $state<Mode>("now");
   const base = import.meta.env.BASE_URL;
   let host: HTMLDivElement;
   let width = $state(400);
-  let height = $state(440);
+  let height = $state(520);
   let hover = $state<{ lat: number; lon: number } | null>(null);
   let hoverPin = $state<string | null>(null);
-  let labels = $state<{ id: string; name: string; x: number; y: number; on: boolean; custom: boolean }[]>([]);
+  let labels = $state<{ id: string; name: string; x: number; y: number; on: boolean }[]>([]);
   let failed = $state("");
+  let ready = $state(false);
 
   let scene: THREE.Scene, camera: THREE.PerspectiveCamera, renderer: THREE.WebGLRenderer, controls: OrbitControls;
-  let mesh: THREE.Mesh, sun: THREE.DirectionalLight, pins: THREE.Group;
-  let heightAt: (x: number, y: number) => number = () => 0;
+  let mesh: THREE.Mesh, sun: THREE.DirectionalLight, fill: THREE.HemisphereLight, pins: THREE.Group;
+  let matNow: THREE.MeshStandardMaterial, matMean: THREE.MeshStandardMaterial;
+  let heightKm: (lat: number, lon: number) => number = () => 0;
   let frame = 0;
 
   async function load() {
@@ -43,62 +56,77 @@
   onMount(() => {
     let disposed = false;
     scene = new THREE.Scene();
-    camera = new THREE.PerspectiveCamera(40, width / height, 1, 5000);
-    camera.position.set(0, 430, 330);
+    camera = new THREE.PerspectiveCamera(36, width / height, 1, 6000);
+    camera.position.set(0, 330, 360);
     try {
       renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     } catch {
-      failed = "3D view needs WebGL, which this browser does not provide. Use the table or coordinates instead.";
+      failed = "3D view needs WebGL, which this browser does not provide. Use the table or coordinates below.";
       return;
     }
     renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
     renderer.setSize(width, height);
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     host.prepend(renderer.domElement);
     controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
-    controls.maxPolarAngle = Math.PI * 0.47;
-    controls.minDistance = 60;
-    controls.maxDistance = 1200;
+    controls.maxPolarAngle = Math.PI * 0.49;
+    controls.minDistance = 30;
+    controls.maxDistance = 1400;
+    controls.target.set(0, -8, 0);
 
-    scene.add(new THREE.HemisphereLight(0x9fb4d0, 0x0a0e14, 0.55));
-    sun = new THREE.DirectionalLight(0xfff1d6, 2.2);
-    scene.add(sun, sun.target);
+    fill = new THREE.HemisphereLight(0x8fa3bf, 0x05070a, 0.05); // faint earthshine, so shadows read as black
+    sun = new THREE.DirectionalLight(0xfff4e0, 3.2);
+    sun.castShadow = true;
+    sun.shadow.mapSize.set(4096, 4096);
+    Object.assign(sun.shadow.camera, { left: -340, right: 340, top: 340, bottom: -340, near: 1, far: 3000 });
+    sun.shadow.bias = -0.0004;
+    sun.shadow.normalBias = 0.6;
+    scene.add(fill, sun, sun.target);
     pins = new THREE.Group();
     scene.add(pins);
 
     load().then(({ meta, h, ill }) => {
       if (disposed) return;
-      const n = meta.n, km = meta.res / 1000, size = n * km;
-      const geo = new THREE.PlaneGeometry(size, size, n - 1, n - 1);
-      geo.rotateX(-Math.PI / 2); // row 0 (max stereo y) ends at z = -size/2, so scene z = -y
+      const n = meta.n, res = meta.res;
+      const geo = new THREE.PlaneGeometry(1, 1, n - 1, n - 1); // reused for its index; positions are replaced
       const pos = geo.attributes.position as THREE.BufferAttribute;
       const colors = new Float32Array(n * n * 3);
-      const dark = new THREE.Color("#06080c"), lit = new THREE.Color("#ddd6c6"), c = new THREE.Color();
-      for (let k = 0; k < n * n; k++) {
-        pos.setY(k, (h[k] / 1000) * EXAG);
-        c.copy(dark).lerp(lit, Math.pow(ill[k] / 255, 1.3));
-        colors.set([c.r, c.g, c.b], k * 3);
+      const dark = new THREE.Color("#050608"), lit = new THREE.Color("#e2dccd"), c = new THREE.Color();
+      for (let row = 0; row < n; row++) {
+        for (let col = 0; col < n; col++) {
+          const k = row * n + col;
+          const [lat, lon] = fromStereo(meta.x0 + col * res, meta.y0 - row * res);
+          const v = toScene(meOf(lat, lon, h[k] / 1000)); // true relief, no exaggeration
+          pos.setXYZ(k, v.x, v.y, v.z);
+          c.copy(dark).lerp(lit, Math.pow(ill[k] / 255, 1.3));
+          colors.set([c.r, c.g, c.b], k * 3);
+        }
       }
       geo.setAttribute("color", new THREE.BufferAttribute(colors, 3));
       geo.computeVertexNormals();
-      mesh = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 1, metalness: 0 }));
+      matNow = new THREE.MeshStandardMaterial({ color: 0xb8b2a6, roughness: 1, metalness: 0 });
+      matMean = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 1, metalness: 0 });
+      mesh = new THREE.Mesh(geo, matNow);
+      mesh.castShadow = mesh.receiveShadow = true;
       scene.add(mesh);
-      heightAt = (x, y) => {
-        const col = Math.round((x / 1000 - (-size / 2 + km / 2)) / km), row = Math.round((size / 2 - km / 2 - y / 1000) / km);
-        return row >= 0 && col >= 0 && row < n && col < n ? (h[row * n + col] / 1000) * EXAG : 0;
+      heightKm = (lat, lon) => {
+        const [x, y] = stereoSouth(lat, lon);
+        const col = Math.round((x - meta.x0) / res), row = Math.round((meta.y0 - y) / res);
+        return row >= 0 && col >= 0 && row < n && col < n ? h[row * n + col] / 1000 : 0;
       };
-      // latitude rings for orientation
       for (const lat of [-88, -85, -82]) {
-        const r = Math.hypot(...stereoSouth(lat, 0)) / 1000;
-        const ring = new THREE.LineLoop(
-          new THREE.BufferGeometry().setFromPoints(Array.from({ length: 128 }, (_, k) => new THREE.Vector3(r * Math.sin((k / 128) * 2 * Math.PI), 0, -r * Math.cos((k / 128) * 2 * Math.PI)))),
-          new THREE.LineBasicMaterial({ color: 0x4fa8e8, transparent: true, opacity: 0.25, depthTest: false }),
-        );
-        ring.position.y = 30;
+        const pts = Array.from({ length: 180 }, (_, k) => toScene(meOf(lat, k * 2, 9)));
+        const ring = new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints(pts),
+          new THREE.LineBasicMaterial({ color: 0x4fa8e8, transparent: true, opacity: 0.22, depthTest: false }));
+        ring.renderOrder = 1;
         scene.add(ring);
       }
+      ready = true;
       updatePins();
-    }).catch(() => (failed = "Could not load the 3D terrain. Use the table or coordinates instead."));
+      applyMode();
+    }).catch(() => (failed = "Could not load the 3D terrain. Use the table or coordinates below."));
 
     const tick = () => {
       frame = requestAnimationFrame(tick);
@@ -113,27 +141,28 @@
       controls.dispose();
       renderer.dispose();
       scene.traverse((o) => {
-        if (o instanceof THREE.Mesh || o instanceof THREE.Line) { o.geometry.dispose(); (o.material as THREE.Material).dispose(); }
+        if (o instanceof THREE.Mesh || o instanceof THREE.Line) o.geometry.dispose();
       });
+      matNow?.dispose();
+      matMean?.dispose();
     };
   });
 
-  function scenePos(lat: number, lon: number) {
-    const [x, y] = stereoSouth(lat, lon);
-    return new THREE.Vector3(x / 1000, heightAt(x, y), -y / 1000);
+  function surface(lat: number, lon: number, liftKm = 0) {
+    return toScene(meOf(lat, lon, heightKm(lat, lon) + liftKm));
   }
 
   function updatePins() {
-    if (!pins || !mesh) return;
+    if (!pins || !ready) return;
     pins.children.forEach((p) => { (p as THREE.Mesh).geometry.dispose(); ((p as THREE.Mesh).material as THREE.Material).dispose(); });
     pins.clear();
     for (const s of sites) {
       const on = s.id === selected;
       const pin = new THREE.Mesh(
-        new THREE.CylinderGeometry(on ? 2.4 : 1.6, 0.2, 26, 12),
-        new THREE.MeshBasicMaterial({ color: on ? 0xf2b544 : s.custom ? 0x4fa8e8 : 0xc2cad6 }),
+        new THREE.CylinderGeometry(on ? 1.8 : 1.1, 0.15, 18, 10),
+        new THREE.MeshBasicMaterial({ color: on ? 0xf2b544 : s.custom ? 0x4fa8e8 : 0xdfe5ee }),
       );
-      pin.position.copy(scenePos(s.lat, s.lon)).add(new THREE.Vector3(0, 13, 0));
+      pin.position.copy(surface(s.lat, s.lon, 9));
       pin.userData.id = s.id;
       pins.add(pin);
     }
@@ -143,21 +172,37 @@
     if (!pins) return;
     const v = new THREE.Vector3();
     labels = pins.children.map((p) => {
-      v.copy(p.position).add(new THREE.Vector3(0, 14, 0)).project(camera);
+      v.copy(p.position).add(new THREE.Vector3(0, 10, 0)).project(camera);
       const s = sites.find((q) => q.id === p.userData.id)!;
-      return { id: s.id, name: s.name, x: (v.x * 0.5 + 0.5) * width, y: (-v.y * 0.5 + 0.5) * height, on: (s.id === selected || s.id === hoverPin) && v.z < 1, custom: !!s.custom };
+      return { id: s.id, name: s.name, x: (v.x * 0.5 + 0.5) * width, y: (-v.y * 0.5 + 0.5) * height, on: (s.id === selected || s.id === hoverPin) && v.z < 1 };
     });
   }
 
+  function applyMode() {
+    if (!mesh) return;
+    const now = mode === "now";
+    mesh.material = now ? matNow : matMean;
+    sun.intensity = now ? 3.2 : 1.1;
+    sun.castShadow = now;
+    fill.intensity = now ? 0.05 : 0.9;
+  }
+
   $effect(() => {
-    sites; selected;
+    sites; selected; ready;
     updatePins();
   });
 
   $effect(() => {
-    if (!sun || sunLon === null) return;
-    const a = (sunLon * Math.PI) / 180, el = (25 * Math.PI) / 180; // azimuth is real, elevation exaggerated for relief
-    sun.position.set(Math.sin(a) * Math.cos(el) * 1000, Math.sin(el) * 1000, -Math.cos(a) * Math.cos(el) * 1000);
+    mode; ready;
+    applyMode();
+  });
+
+  $effect(() => {
+    if (!sun) return;
+    const d = sunDir ?? [1, 0, -0.03]; // fallback outside the data window: low Sun over 0°E
+    const L = new THREE.Vector3(d[1], -d[2], -d[0]).normalize(); // same rotation as toScene, without the R offset (a direction)
+    sun.position.copy(L.multiplyScalar(1200));
+    sun.target.position.set(0, 0, 0);
   });
 
   $effect(() => {
@@ -176,21 +221,24 @@
     if (pin) return { kind: "pin", id: pin.object.userData.id as string };
     const t = mesh && ray.intersectObject(mesh)[0];
     if (!t) return null;
-    const [lat, lon] = fromStereo(t.point.x * 1000, -t.point.z * 1000);
+    const p = t.point; // scene -> MOON_ME: x = -z, y = x, z = -(y + R)
+    const me = [-p.z, p.x, -(p.y + R)];
+    const lat = (Math.asin(me[2] / Math.hypot(me[0], me[1], me[2])) * 180) / Math.PI;
+    const lon = ((Math.atan2(me[1], me[0]) * 180) / Math.PI + 360) % 360;
     return { kind: "ground", lat, lon };
   }
 
   let down: { x: number; y: number } | null = null;
   function onDown(e: PointerEvent) { down = { x: e.clientX, y: e.clientY }; }
   function onMove(e: PointerEvent) {
-    if (!renderer) return;
+    if (!renderer || !ready) return;
     const h = hit(e);
     hover = h?.kind === "ground" ? h : null;
     hoverPin = h?.kind === "pin" ? h.id : null;
     renderer.domElement.style.cursor = h ? "pointer" : "grab";
   }
   function onUp(e: PointerEvent) {
-    if (!down || Math.hypot(e.clientX - down.x, e.clientY - down.y) > 4) return; // it was a drag
+    if (!down || !ready || Math.hypot(e.clientX - down.x, e.clientY - down.y) > 4) return; // it was a drag
     const h = hit(e);
     if (!h) return;
     if (h.kind === "pin") onselect(h.id);
@@ -198,27 +246,40 @@
   }
 </script>
 
-<div class="map" bind:this={host} bind:clientWidth={width} bind:clientHeight={height} onpointerdown={onDown} onpointermove={onMove} onpointerup={onUp}
-  role="application" aria-label="3D terrain of the lunar south pole. Click a pin to select a site, or click the terrain to compute a new point.">
-  {#if failed}
-    <p class="fail">{failed}</p>
-  {/if}
-  {#each labels as l (l.id)}
-    {#if l.on}<span class="label" style:left="{l.x}px" style:top="{l.y}px">{l.name}</span>{/if}
-  {/each}
-  <div class="hud">
-    <span>{busy ? "Computing point…" : hover ? `${Math.abs(hover.lat).toFixed(3)}°S ${hover.lon.toFixed(3)}°E` : "Drag to orbit · click a pin or the terrain"}</span>
-    <span class="legend"><i class="ramp"></i>PGDA mean sunlight · 4× relief</span>
+<div class="wrap">
+  <div class="map" bind:this={host} bind:clientWidth={width} bind:clientHeight={height}
+    onpointerdown={onDown} onpointermove={onMove} onpointerup={onUp}
+    role="application" aria-label="3D terrain of the lunar south pole. Click a pin to select a site, or click the terrain to compute a new point.">
+    {#if failed}<p class="fail">{failed}</p>{/if}
+    {#each labels as l (l.id)}
+      {#if l.on}<span class="label" style:left="{l.x}px" style:top="{l.y}px">{l.name}</span>{/if}
+    {/each}
+    <div class="hud">
+      <span>{busy ? "Computing point…" : hover ? `${Math.abs(hover.lat).toFixed(3)}°S ${hover.lon.toFixed(3)}°E` : "Drag to orbit · click a pin or the terrain"}</span>
+      <span class="modes" role="radiogroup" aria-label="Terrain shading">
+        <button role="radio" aria-checked={mode === "now"} onclick={() => (mode = "now")} onpointerdown={(e) => e.stopPropagation()} onpointerup={(e) => e.stopPropagation()}>Sun at selected time</button>
+        <button role="radio" aria-checked={mode === "mean"} onclick={() => (mode = "mean")} onpointerdown={(e) => e.stopPropagation()} onpointerup={(e) => e.stopPropagation()}>Mean sunlight (PGDA)</button>
+      </span>
+    </div>
   </div>
+  {#if children}<div class="panel">{@render children()}</div>{/if}
 </div>
 
 <style>
-  .map { position: relative; height: 440px; background: radial-gradient(ellipse at 50% 30%, #121a26, var(--bg) 70%); border-bottom: 1px solid var(--line); touch-action: none; overflow: hidden; }
+  .wrap { position: relative; border-bottom: 1px solid var(--line); }
+  .map { position: relative; height: min(68vh, 620px); min-height: 420px; background: #030405; touch-action: none; overflow: hidden; }
   .map :global(canvas) { display: block; }
-  .label { position: absolute; transform: translate(-50%, -100%); font: 600 12px/1 var(--sans); color: var(--bg); background: var(--sun); padding: 4px 6px; border-radius: 3px; pointer-events: none; white-space: nowrap; }
-  .hud { position: absolute; left: 10px; right: 10px; bottom: 8px; display: flex; justify-content: space-between; gap: 8px; font: 500 11px/1.2 var(--mono); color: var(--text-dim); pointer-events: none; }
-  .legend { display: flex; align-items: center; gap: 6px; }
-  .ramp { width: 36px; height: 6px; border-radius: 1px; background: linear-gradient(90deg, #06080c, #ddd6c6); outline: 1px solid var(--line-strong); }
-  @media (max-width: 600px) { .map { height: 320px; } .legend { display: none; } }
+  .label { position: absolute; transform: translate(-50%, -100%); font: 600 12px/1 var(--sans); color: var(--bg); background: var(--sun); padding: 4px 6px; border-radius: 2px; pointer-events: none; white-space: nowrap; }
+  .hud { position: absolute; left: 16px; right: 16px; bottom: 12px; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; font: 500 11px/1.2 var(--mono); color: var(--text-dim); pointer-events: none; }
+  .modes { display: flex; pointer-events: auto; border: 1px solid var(--line-strong); border-radius: 3px; overflow: hidden; }
+  .modes button { all: unset; cursor: pointer; padding: 6px 9px; font: 500 11px/1 var(--sans); color: var(--text-dim); background: rgb(3 4 5 / 0.7); }
+  .modes button + button { border-left: 1px solid var(--line-strong); }
+  .modes button[aria-checked="true"] { color: var(--bg); background: var(--text-soft); }
+  .modes button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+  .panel { position: absolute; top: 16px; left: 16px; width: min(360px, calc(100% - 32px)); }
   .fail { position: absolute; inset: 0; display: grid; place-items: center; padding: 24px; text-align: center; color: var(--text-dim); margin: 0; }
+  @media (max-width: 700px) {
+    .map { height: 380px; min-height: 0; }
+    .panel { position: static; width: auto; padding: 12px 16px 16px; }
+  }
 </style>

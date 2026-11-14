@@ -6,7 +6,7 @@
   import AddPoint from "./lib/AddPoint.svelte";
   import Map3D from "./lib/Map3D.svelte";
   import Compare from "./lib/Compare.svelte";
-  import { computePoint, loadSaved, save, newId, validate, sunLonAt, type CustomPoint } from "./lib/custom";
+  import { computePoint, loadSaved, save, newId, validate, sunDirAt, type CustomPoint } from "./lib/custom";
   import {
     loadIndex, loadSite, indexAt, hoursUntilChange, sunUp, earthUp, horizonAt,
     fmtDuration, fmtDeg, fmtLatLon, type Meta, type Site, type SiteIndex,
@@ -21,7 +21,8 @@
   let points = $state<CustomPoint[]>([]);
   let computed = $state<Record<string, Site>>({});
   let busy = $state(false);
-  let sunLon = $state<number | null>(null);
+  let sunDir = $state<[number, number, number] | null>(null);
+  let playing = $state(false);
   let compare = $state<string[]>([]);
   let compareSites = $state<Site[]>([]);
   $effect(() => {
@@ -39,7 +40,7 @@
   const windowH = $derived(meta ? (Date.parse(meta.window_utc[1] + "Z") - Date.parse(meta.window_utc[0] + "Z")) / 3.6e6 + 1 : Infinity);
   $effect(() => {
     const d = date;
-    sunLonAt(d).then((v) => (sunLon = v)).catch(() => (sunLon = null));
+    sunDirAt(d).then((v) => (sunDir = v)).catch(() => (sunDir = null));
   });
 
   const allSites = $derived<SiteIndex[]>([
@@ -112,6 +113,20 @@
     if (!Number.isNaN(d.getTime())) date = d;
   }
 
+  const shift = (hours: number) => (date = new Date(date.getTime() + hours * 3.6e6));
+  $effect(() => {
+    if (!playing) return;
+    const t = setInterval(() => {
+      if (!site || indexAt(site, new Date(date.getTime() + 2 * 3.6e6)) < 0) playing = false;
+      else shift(2); // 2 h per frame: one lunar day in about 30 s
+    }, 80);
+    return () => clearInterval(t);
+  });
+  const subsolar = $derived(sunDir ? {
+    lon: ((Math.atan2(sunDir[1], sunDir[0]) * 180) / Math.PI + 360) % 360,
+    elPole: (Math.asin(-sunDir[2]) * 180) / Math.PI,
+  } : null);
+
   const now = $derived.by(() => {
     if (!site || i < 0) return null;
     const sunHz = horizonAt(site, site.sun.az[i]);
@@ -131,25 +146,66 @@
 </script>
 
 <header>
-  <div class="brand">
-    <h1>Lunar Landing Site Navigator</h1>
-    <p>Sun and Earth visibility over the real terrain horizon at the lunar south pole</p>
-  </div>
-  <div class="when">
-    <label for="when">Time (UTC)</label>
-    <input id="when" type="datetime-local" step="3600" value={inputValue}
-      min={meta?.window_utc[0]} max={meta?.window_utc[1]}
-      onchange={(e) => setFromInput(e.currentTarget.value)} />
-    <button onclick={() => (date = new Date())}>Now</button>
-  </div>
+  <h1>Lunar Landing Site Navigator</h1>
+  <p>Where the Sun and Earth can be seen from the lunar south pole, over the real terrain, hour by hour.</p>
 </header>
 
 {#if error}
-  <p class="error" role="alert">{error} Reload the page to try again.</p>
+  <p class="error" role="alert">{error}</p>
 {/if}
 
-<Map3D sites={allSites} {selected} {sunLon} {busy} onselect={select}
-  onpick={(lat, lon) => addPoint(`Point ${Math.abs(lat).toFixed(3)}°S ${lon.toFixed(3)}°E`, lat, lon)} />
+<Map3D sites={allSites} {selected} {sunDir} {busy} onselect={select}
+  onpick={(lat, lon) => addPoint(`Point ${Math.abs(lat).toFixed(3)}°S ${lon.toFixed(3)}°E`, lat, lon)}>
+  <div class="instr">
+    {#if site}
+      <div class="instr-head">
+        <h2>{site.name}</h2>
+        <span class="coords">{fmtLatLon(site.lat, site.lon)} · {site.ground_height_m.toFixed(0)} m</span>
+      </div>
+    {/if}
+    <div class="clock">
+      <label class="sr" for="when">Selected time, UTC</label>
+      <input id="when" type="datetime-local" step="3600" value={inputValue}
+        min={meta?.window_utc[0]} max={meta?.window_utc[1]}
+        onchange={(e) => setFromInput(e.currentTarget.value)} />
+      <span class="utc">UTC</span>
+      <button class="now" onclick={() => { playing = false; date = new Date(); }}>Now</button>
+    </div>
+    <div class="steps" role="group" aria-label="Move time">
+      <button onclick={() => shift(-24)} aria-label="Back one day">−1d</button>
+      <button onclick={() => shift(-1)} aria-label="Back one hour">−1h</button>
+      <button class="play" onclick={() => (playing = !playing)} aria-pressed={playing}>
+        <svg viewBox="0 0 12 12" aria-hidden="true">
+          {#if playing}<path d="M3 2h2v8H3zM7 2h2v8H7z" />{:else}<path d="M3 1.5v9l7.5-4.5z" />{/if}
+        </svg>
+        {playing ? "Pause" : "Play"}
+      </button>
+      <button onclick={() => shift(1)} aria-label="Forward one hour">+1h</button>
+      <button onclick={() => shift(24)} aria-label="Forward one day">+1d</button>
+    </div>
+    {#if now}
+      <dl class="rows">
+        <div class="row" class:up={now.sunUp}>
+          <dt><i class="dot sun"></i>Sun</dt>
+          <dd class="state">{now.sunUp ? `Up · ${Math.round(now.sunFrac * 100)}% of disk` : now.sunFrac > 0 ? `Setting · ${Math.round(now.sunFrac * 100)}%` : "Below terrain"}</dd>
+          <dd class="next">{now.sunUp ? "sets in" : "rises in"} <b>{fmtDuration(now.sunChange)}</b></dd>
+          <dd class="sub">elevation {fmtDeg(now.sunEl)} · {fmtDeg(now.sunAbove)} over terrain</dd>
+        </div>
+        <div class="row" class:up={now.earthUp}>
+          <dt><i class="dot earth"></i>Earth</dt>
+          <dd class="state">{now.earthUp ? "In view · direct link" : "Hidden · no direct link"}</dd>
+          <dd class="next">{now.earthUp ? "sets in" : "rises in"} <b>{fmtDuration(now.earthChange)}</b></dd>
+          <dd class="sub">elevation {fmtDeg(now.earthEl)} · {fmtDeg(now.earthAbove)} over terrain</dd>
+        </div>
+      </dl>
+    {:else if site}
+      <p class="out">Outside the computed window ({meta?.window_utc[0].slice(0, 10)} to {meta?.window_utc[1].slice(0, 10)}).</p>
+    {/if}
+    {#if subsolar}
+      <p class="light">Map lit by the Sun at this time: over {subsolar.lon.toFixed(0)}°E, {fmtDeg(subsolar.elPole)} at the pole.</p>
+    {/if}
+  </div>
+</Map3D>
 
 <main>
   <aside>
@@ -167,42 +223,14 @@
         <h2>{site.name}</h2>
         <p class="coords">{fmtLatLon(site.lat, site.lon)} · ground {site.ground_height_m.toFixed(0)} m · observer {site.observer_height_m} m above ground</p>
       </div>
-
-      {#if now}
-        <div class="readout">
-          <div class="cell sun-cell">
-            <h3><span class="dot sun"></span>Sun</h3>
-            <p class="state">{now.sunUp ? "Above horizon" : "Below horizon"}</p>
-            <dl>
-              <dt>Disk visible</dt><dd>{Math.round(now.sunFrac * 100)}%</dd>
-              <dt>Elevation</dt><dd>{fmtDeg(now.sunEl)}</dd>
-              <dt>Clearance over terrain</dt><dd>{fmtDeg(now.sunAbove)}</dd>
-              <dt>{now.sunUp ? "Sets in" : "Rises in"}</dt><dd>{fmtDuration(now.sunChange)}</dd>
-            </dl>
-          </div>
-          <div class="cell earth-cell">
-            <h3><span class="dot earth"></span>Earth</h3>
-            <p class="state">{now.earthUp ? "In view: direct link possible" : "Hidden: no direct link"}</p>
-            <dl>
-              <dt>Elevation</dt><dd>{fmtDeg(now.earthEl)}</dd>
-              <dt>Clearance over terrain</dt><dd>{fmtDeg(now.earthAbove)}</dd>
-              <dt>{now.earthUp ? "Sets in" : "Rises in"}</dt><dd>{fmtDuration(now.earthChange)}</dd>
-            </dl>
-          </div>
-          <div class="cell">
-            <h3>Whole window</h3>
-            <p class="state">Nov 2026 to Dec 2028</p>
-            <dl>
-              <dt>Sunlit</dt><dd>{site.summary.sunlit_pct.toFixed(1)}%</dd>
-              <dt>Earth in view</dt><dd>{site.summary.earth_visible_pct.toFixed(1)}%</dd>
-              <dt>Longest night</dt><dd>{site.summary.longest_dark_h >= site.time.n ? "never sunlit" : fmtDuration(site.summary.longest_dark_h)}</dd>
-              <dt>Longest Earth blackout</dt><dd>{site.summary.longest_no_earth_h >= site.time.n ? "never in view" : fmtDuration(site.summary.longest_no_earth_h)}</dd>
-            </dl>
-          </div>
-        </div>
-      {:else}
-        <p class="muted">The selected time is outside the computed window ({meta?.window_utc[0]} to {meta?.window_utc[1]} UTC).</p>
-      {/if}
+      <dl class="strip">
+        <div><dt>Sunlit</dt><dd>{site.summary.sunlit_pct.toFixed(1)}%</dd></div>
+        <div><dt>Earth in view</dt><dd>{site.summary.earth_visible_pct.toFixed(1)}%</dd></div>
+        <div><dt>Sun and Earth</dt><dd>{site.summary.sun_and_earth_pct.toFixed(1)}%</dd></div>
+        <div><dt>Longest night</dt><dd>{site.summary.longest_dark_h >= site.time.n ? "never lit" : fmtDuration(site.summary.longest_dark_h)}</dd></div>
+        <div><dt>Longest Earth blackout</dt><dd>{site.summary.longest_no_earth_h >= site.time.n ? "never in view" : fmtDuration(site.summary.longest_no_earth_h)}</dd></div>
+      </dl>
+      <p class="window">Share of every hour from Nov 2026 to Dec 2028.</p>
 
       {#if compareSites.length >= 2}
         <Compare sites={compareSites} {date} onpick={(d) => (date = d)} onremove={toggleCompare} />
@@ -235,40 +263,55 @@
 </main>
 
 <style>
-  header { display: flex; flex-wrap: wrap; gap: 16px 32px; align-items: end; justify-content: space-between; padding: 20px 24px 16px; border-bottom: 1px solid var(--line); }
-  h1 { font-size: 20px; font-weight: 600; letter-spacing: -0.01em; margin: 0; }
-  .brand p { margin: 4px 0 0; color: var(--text-dim); font-size: 13px; }
-  .when { display: flex; align-items: center; gap: 8px; }
-  .when label { color: var(--text-dim); font-size: 12px; }
-  input, .when button { font: 500 13px/1 var(--mono); color: var(--text); background: var(--surface-2); border: 1px solid var(--line-strong); border-radius: 4px; padding: 8px 10px; color-scheme: dark; }
-  .when button { cursor: pointer; font-family: var(--sans); }
-  .when button:hover { background: var(--surface-3); }
-  input:focus-visible, .when button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  header { padding: 18px 24px 16px; border-bottom: 1px solid var(--line); display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 20px; }
+  h1 { font-size: 18px; font-weight: 600; letter-spacing: -0.01em; margin: 0; }
+  header p { margin: 0; color: var(--text-dim); font-size: 13px; }
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
 
-  main { display: grid; grid-template-columns: minmax(320px, 420px) 1fr; min-height: calc(100vh - 80px); }
-  aside { border-right: 1px solid var(--line); padding: 16px 6px; }
-  .detail { padding: 20px 28px 40px; min-width: 0; }
-  .title h2 { font-size: 24px; font-weight: 600; margin: 0; letter-spacing: -0.01em; }
-  .coords { font-family: var(--mono); color: var(--text-dim); font-size: 12px; margin: 6px 0 20px; }
-
-  .readout { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border: 1px solid var(--line); border-radius: 6px; margin-bottom: 24px; }
-  .cell { padding: 14px 16px; }
-  .cell + .cell { border-left: 1px solid var(--line); }
-  h3 { font-size: 13px; font-weight: 600; margin: 0; display: flex; align-items: center; gap: 8px; }
-  .dot { width: 8px; height: 8px; border-radius: 50%; }
+  .instr { background: rgb(6 8 11 / 0.84); backdrop-filter: blur(6px); border: 1px solid var(--line-strong); border-radius: 4px; padding: 14px 16px; box-shadow: 0 8px 24px rgb(0 0 0 / 0.45); }
+  .instr-head h2 { font-size: 17px; font-weight: 600; margin: 0; letter-spacing: -0.01em; }
+  .instr-head .coords { font: 500 11px/1.4 var(--mono); color: var(--text-dim); }
+  .clock { display: flex; align-items: center; gap: 6px; margin-top: 12px; }
+  .clock input { flex: 1; min-width: 0; }
+  .utc { font: 500 11px/1 var(--mono); color: var(--text-dim); }
+  .steps { display: grid; grid-template-columns: 1fr 1fr 1.6fr 1fr 1fr; gap: 4px; margin-top: 6px; }
+  .instr input, .instr button { font: 500 12px/1 var(--mono); color: var(--text); background: var(--surface-2); border: 1px solid var(--line-strong); border-radius: 3px; padding: 7px 8px; color-scheme: dark; }
+  .instr button { cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+  .instr button:hover { border-color: var(--text-dim); }
+  .instr button.play { font-family: var(--sans); font-weight: 600; background: var(--sun); color: var(--bg); border-color: var(--sun); }
+  .instr button.play[aria-pressed="true"] { background: transparent; color: var(--sun); }
+  .play svg { width: 10px; height: 10px; fill: currentColor; }
+  .instr button.now { font-family: var(--sans); }
+  .instr input:focus-visible, .instr button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .rows { margin: 14px 0 0; display: grid; gap: 10px; }
+  .row { display: grid; grid-template-columns: auto 1fr; column-gap: 12px; row-gap: 2px; padding-top: 10px; border-top: 1px solid var(--line); }
+  .row dt { grid-row: span 3; font-size: 12px; font-weight: 600; color: var(--text-soft); display: flex; align-items: flex-start; gap: 6px; width: 52px; }
+  .row dd { margin: 0; }
+  .row .state { font-size: 14px; font-weight: 600; color: var(--text-dim); }
+  .row.up .state { color: var(--text); }
+  .row .next { font-size: 12px; color: var(--text-dim); }
+  .row .next b { font: 500 12px/1 var(--mono); color: var(--text); }
+  .row .sub { font: 500 11px/1.4 var(--mono); color: var(--text-dim); }
+  .dot { width: 8px; height: 8px; border-radius: 50%; margin-top: 4px; flex: none; }
   .dot.sun { background: var(--sun); }
   .dot.earth { background: var(--earth); }
-  .state { margin: 4px 0 12px; color: var(--text-soft); font-size: 13px; }
-  dl { display: grid; grid-template-columns: 1fr auto; gap: 6px 12px; margin: 0; font-size: 12px; }
-  dt { color: var(--text-dim); }
-  dd { margin: 0; text-align: right; font-family: var(--mono); font-variant-numeric: tabular-nums; }
+  .light, .out { margin: 12px 0 0; font-size: 11px; color: var(--text-dim); }
+
+  main { display: grid; grid-template-columns: minmax(320px, 420px) 1fr; }
+  aside { border-right: 1px solid var(--line); padding: 16px 6px; }
+  .detail { padding: 24px 28px 40px; min-width: 0; }
+  .title h2 { font-size: 24px; font-weight: 600; margin: 0; letter-spacing: -0.01em; }
+  .coords { font-family: var(--mono); color: var(--text-dim); font-size: 12px; margin: 6px 0 20px; }
+  .strip { display: flex; flex-wrap: wrap; gap: 12px 36px; margin: 0; }
+  .strip dt { font-size: 12px; color: var(--text-dim); }
+  .strip dd { margin: 2px 0 0; font: 500 20px/1.2 var(--mono); font-variant-numeric: tabular-nums; }
+  .window { color: var(--text-dim); font-size: 12px; margin: 8px 0 28px; }
 
   figure { margin: 0 0 28px; }
-  figcaption { color: var(--text-dim); font-size: 12px; margin-bottom: 10px; }
-  figcaption { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 16px; }
+  figcaption { color: var(--text-dim); font-size: 12px; margin-bottom: 10px; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 16px; }
   .key { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; font-family: var(--mono); }
   .key i { display: inline-block; width: 14px; height: 2px; margin-right: 2px; vertical-align: middle; }
-  .k-terrain { background: var(--ridge); height: 8px !important; border-top: 2px solid var(--ridge); background: var(--terrain) !important; }
+  .k-terrain { height: 8px !important; border-top: 2px solid var(--ridge); background: var(--terrain) !important; }
   .k-sun { background: var(--sun); }
   .k-earth { background: var(--earth); }
   .k-dot { width: 8px !important; height: 8px !important; border-radius: 50%; background: var(--text-soft); }
@@ -276,14 +319,12 @@
   footer strong { color: var(--text-soft); font-weight: 600; }
   .scroll-x { overflow-x: auto; }
   .muted { color: var(--text-dim); padding: 0 10px; }
-  .error { margin: 16px 24px 0; padding: 10px 14px; border: 1px solid var(--danger); border-radius: 4px; color: var(--danger); }
+  .error { margin: 12px 24px 0; padding: 10px 14px; border: 1px solid var(--danger); border-radius: 4px; color: var(--danger); }
 
   @media (max-width: 900px) {
     main { grid-template-columns: minmax(0, 1fr); }
-    header { padding: 16px; }
+    header { padding: 14px 16px; }
     aside { border-right: 0; border-bottom: 1px solid var(--line); }
     .detail { padding: 16px; }
-    .readout { grid-template-columns: 1fr; }
-    .cell + .cell { border-left: 0; border-top: 1px solid var(--line); }
   }
 </style>
