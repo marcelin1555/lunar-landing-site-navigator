@@ -6,6 +6,7 @@
   import AddPoint from "./lib/AddPoint.svelte";
   import Map3D from "./lib/Map3D.svelte";
   import Compare from "./lib/Compare.svelte";
+  import Learn from "./lib/Learn.svelte";
   import { computePoint, loadSaved, save, newId, validate, sunDirAt, type CustomPoint } from "./lib/custom";
   import {
     loadIndex, loadSite, indexAt, hoursUntilChange, sunUp, earthUp, horizonAt,
@@ -127,6 +128,24 @@
     if (selected === id) select(defaultId);
   }
 
+  // the "Why the south pole is hard" tour: each step puts the app in the state that shows it
+  const goTo = (id: string) => {
+    const smooth = !matchMedia("(prefers-reduced-motion: reduce)").matches;
+    requestAnimationFrame(() => document.getElementById(id)?.scrollIntoView({ behavior: smooth ? "smooth" : "auto", block: "start" }));
+  };
+  async function showStep(step: number) {
+    playing = false;
+    if (step === 0) { await select("shackleton-rim"); goTo("skyline"); }
+    if (step === 1) {
+      const floor = points.find((p) => p.name === "Shackleton crater floor");
+      if (floor) await select(floor.id);
+      else await addPoint("Shackleton crater floor", -89.67, 129.78); // IAU center of Shackleton
+      goTo("record");
+    }
+    if (step === 2) { await select("shackleton-rim"); goTo("timeline"); }
+    if (step === 3) { await select("malapert-massif"); date = new Date(); playing = true; goTo("top"); }
+  }
+
   const i = $derived(site ? indexAt(site, date) : -1);
   const inputValue = $derived(date.toISOString().slice(0, 16));
   function setFromInput(v: string) {
@@ -167,7 +186,7 @@
 </script>
 
 {#if !film}
-<header>
+<header id="top">
   <div>
     <h1>Lunar Landing Site Navigator</h1>
     <p>Where the Sun and Earth can be seen from the lunar south pole, over the real terrain, hour by hour.</p>
@@ -249,6 +268,7 @@
 {#if !film}
 <main>
   <aside>
+    {#if sites.length}<Learn onshow={showStep} />{/if}
     {#if verdict.length}
       <section class="verdict" aria-labelledby="verdict-title">
         <h2 id="verdict-title">Best site by mission need</h2>
@@ -277,7 +297,7 @@
       <Compare sites={compareSites} {date} onpick={(d) => (date = d)} onremove={toggleCompare} />
     {/if}
     {#if site}
-      <div class="title">
+      <div class="title" id="record">
         <h2>{site.name}<span>: two-year record</span></h2>
         <p class="coords">{fmtLatLon(site.lat, site.lon)} · ground {site.ground_height_m.toFixed(0)} m · observer {site.observer_height_m} m above ground</p>
       </div>
@@ -293,7 +313,7 @@
         <p class="psr-detail"><strong>Permanently shadowed region.</strong> The terrain blocks the Sun at every hour of the window{earthNever ? ", and Earth too" : ""}. Not a landing site for a solar-powered lander, but a prime target for water ice: pair it with a lit rim nearby, like the Artemis plan of landing on a rim and exploring the shadow.</p>
       {/if}
 
-      <figure>
+      <figure id="skyline">
         <figcaption>
           Horizon seen from the site, with the Sun and Earth paths for the next 14 days
           <span class="key"><i class="k-terrain"></i>terrain <i class="k-sun"></i>Sun path <i class="k-earth"></i>Earth path <i class="k-dot"></i>now</span>
@@ -301,7 +321,7 @@
         <Skyline {site} index={i} />
       </figure>
 
-      <figure>
+      <figure id="timeline">
         <figcaption>Next 30 days. Click to move the selected time.</figcaption>
         <Timeline {site} index={i} onpick={(d) => (date = d)} />
       </figure>

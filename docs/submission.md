@@ -66,6 +66,8 @@ You can:
 
 You can also compare up to three sites for the next 30 days from any date.
 
+For students and the public, a four-step tour, "Why the south pole is hard", explains why the pole is so unlike Earth: the Sun circles the horizon instead of rising, a few kilometres separate constant light from permanent shadow, Earth hides behind hills, and nights last days. Each step has a "Show me" button that sets the app to the case that proves it.
+
 > *Português:* Perto do polo sul lunar o Sol fica sempre a poucos graus do horizonte, e a Terra oscila acima e abaixo dele. Uma colina a 10 km pode decidir se uma sonda tem energia ou consegue falar com a Terra. Estimativas com horizonte plano não bastam.
 >
 > Nossa ferramenta:
@@ -84,6 +86,8 @@ You can also compare up to three sites for the next 30 days from any date.
 > - clicar no mapa 3D.
 >
 > Também dá para comparar até três locais nos próximos 30 dias a partir de qualquer data.
+>
+> Para estudantes e o público, um tour de quatro passos, "Why the south pole is hard", explica por que o polo é tão diferente da Terra: o Sol gira em volta do horizonte em vez de nascer, poucos quilômetros separam luz constante de sombra permanente, a Terra se esconde atrás dos morros e as noites duram dias. Cada passo tem um botão "Show me" que coloca o app no caso que prova a ideia.
 
 ### What did we learn? (key finding)
 **EN**

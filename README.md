@@ -7,6 +7,8 @@ This app shows when the Sun and the Earth can be seen from candidate landing sit
 - Earth visibility (direct communication),
 - the longest stretch of darkness.
 
+Students and the public get a four-step tour, "Why the south pole is hard", described below.
+
 ## How it works
 
 1. **Horizon.** From each site we cast 720 rays, one every 0.5° of azimuth, out to 150 km along great circles. The rays run over the LOLA polar elevation model. For each direction we keep the highest terrain elevation angle, computed with exact 3D geometry so the Moon's curvature is included. The observer stands 2 m above the ground.
@@ -26,6 +28,17 @@ On sharp summits the horizon is the slope just below the observer, so Earth visi
 
 Crater floors such as Shackleton, Haworth and Faustini come out at 0% Sun and 0% Earth. These are permanently shadowed regions, where water ice may be.
 
+## For students and the public
+
+The tour at the top of the site list explains in four steps why the south pole is so unlike Earth. Each step has a "Show me" button that puts the app in the state that proves the point:
+
+1. **The Sun circles instead of rising and setting.** It never gets more than 1.9° above a flat horizon at Shackleton's rim (vs 23° at Earth's poles in summer), so a 100 m hill casts a shadow almost 4 km long. The button opens the horizon chart.
+2. **A few kilometres change everything.** Shackleton's rim is sunlit 87% of the time; its floor, about 10 km away, 0%. The button computes the floor.
+3. **Earth hides too.** On the rim Earth is in view half the time, with blackouts of up to 14 days; Malapert sees it 74% of the time. The button opens the visibility timeline.
+4. **Nights last days.** The longest night is 3 days on Shackleton's rim and 11 days at Malapert. The button plays a lunar day.
+
+Every number comes from the app's own 2026–2028 results.
+
 ## Validation
 
 - Sun and Earth azimuth and elevation match **JPL Horizons** to within 0.005°. The values are fixed in `pipeline/tests/test_ephemeris.py`.
@@ -38,6 +51,7 @@ Crater floors such as Shackleton, Haworth and Faustini come out at 0% Sun and 0%
 - There is no atmosphere, so no refraction. The Sun is modeled as a uniform disk.
 - Earth counts as visible when its center is above the terrain. Real links also depend on antenna height and relays.
 - Energy is shown as hours of sunlight, not watts.
+- Coverage is the south polar region (south of 80.5°S for custom points). Equatorial sites such as the Apollo landings are out of scope; the pole is where terrain makes the problem hardest.
 - The 3D view is a visual guide. It uses a 1.2 km mesh at true scale and true curvature, lit from the real Sun direction (SPICE) with a shadow map. Every number in the app comes from the 120 m analysis (240 m for custom points), not from the 3D rendering.
 
 ## Run
