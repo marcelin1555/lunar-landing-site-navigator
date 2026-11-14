@@ -1,0 +1,72 @@
+[
+  {
+    "id": "connecting-ridge",
+    "name": "Connecting Ridge",
+    "lat": -89.53432,
+    "lon": 209.94767,
+    "source": "LPSC 2024 abstract 1695"
+  },
+  {
+    "id": "peak-near-shackleton",
+    "name": "Peak near Shackleton",
+    "lat": -89.01701,
+    "lon": 126.27302,
+    "source": "LPSC 2024 abstract 1695"
+  },
+  {
+    "id": "mons-mouton",
+    "name": "Mons Mouton",
+    "lat": -84.528,
+    "lon": 30.719,
+    "source": "LPSC 2025 abstract 2742"
+  },
+  {
+    "id": "shackleton-rim",
+    "name": "Shackleton Rim",
+    "lat": -89.68834,
+    "lon": 197.36126,
+    "source": "Best-lit 120 m pixel (PGDA mean solar-disc visibility 90%) in PGDA LOLA 5 m site box Site04"
+  },
+  {
+    "id": "nobile-rim-1",
+    "name": "Nobile Rim 1",
+    "lat": -85.30246,
+    "lon": 37.08376,
+    "source": "Best-lit 120 m pixel (PGDA mean solar-disc visibility 86%) in PGDA LOLA 5 m site box Site06"
+  },
+  {
+    "id": "de-gerlache-rim",
+    "name": "de Gerlache Rim",
+    "lat": -88.70315,
+    "lon": 291.6986,
+    "source": "Best-lit 120 m pixel (PGDA mean solar-disc visibility 80%) in PGDA LOLA 5 m site box Site11"
+  },
+  {
+    "id": "leibnitz-beta",
+    "name": "Leibnitz Beta Plateau",
+    "lat": -85.4142,
+    "lon": 31.69545,
+    "source": "Best-lit 120 m pixel (PGDA mean solar-disc visibility 80%) in PGDA LOLA 5 m site box Site20"
+  },
+  {
+    "id": "malapert-massif",
+    "name": "Malapert Massif",
+    "lat": -85.96797,
+    "lon": 357.74159,
+    "source": "Best-lit 120 m pixel (PGDA mean solar-disc visibility 85%) in PGDA LOLA 5 m site box Site23"
+  },
+  {
+    "id": "haworth",
+    "name": "Haworth",
+    "lat": -86.36705,
+    "lon": 336.76181,
+    "source": "Best-lit 120 m pixel (PGDA mean solar-disc visibility 75%) in PGDA LOLA 5 m site box Haworth"
+  },
+  {
+    "id": "nobile-rim-2",
+    "name": "Nobile Rim 2",
+    "lat": -83.72496,
+    "lon": 59.42007,
+    "source": "Best-lit 120 m pixel (PGDA mean solar-disc visibility 54%) in PGDA LOLA 5 m site box DM2"
+  }
+]
