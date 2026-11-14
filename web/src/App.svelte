@@ -55,6 +55,9 @@
       { need: "Power and a direct Earth link together", site: c, value: `${c.summary.sun_and_earth_pct.toFixed(1)}% of hours`, tone: "both" },
     ];
   });
+  // opens on the site that answers the demo's question best: power and an Earth link together
+  const defaultId = $derived(verdict[2]?.site.id ?? sites[0]?.id ?? "");
+  const keyIds = $derived([...new Set([...verdict.map((v) => v.site.id), ...compare])]);
   const sunNever = $derived(!!site && site.summary.sunlit_pct === 0);
   const earthNever = $derived(!!site && site.summary.earth_visible_pct === 0);
 
@@ -74,7 +77,7 @@
       const hash = location.hash.slice(1);
       const shared = hash.match(/^at=(-?[\d.]+),(-?[\d.]+)$/);
       if (shared) await addPoint("Shared point", Number(shared[1]), Number(shared[2]));
-      else select(sites.some((s) => s.id === hash) ? hash : sites[0].id);
+      else select(sites.some((s) => s.id === hash) ? hash : defaultId);
       for (const p of points) if (!computed[p.id]) computed[p.id] = await computePoint(p);
     } catch (e) {
       error = (e as Error).message;
@@ -118,7 +121,7 @@
     compare = compare.filter((c) => c !== id);
     delete computed[id];
     save(points);
-    if (selected === id) select(sites[0].id);
+    if (selected === id) select(defaultId);
   }
 
   const i = $derived(site ? indexAt(site, date) : -1);
@@ -174,7 +177,7 @@
   <p class="error" role="alert">{error}</p>
 {/if}
 
-<Map3D sites={allSites} {selected} {hoverId} {sunDir} {busy} onselect={select}
+<Map3D sites={allSites} {selected} {hoverId} pinned={keyIds} {sunDir} {busy} onselect={select}
   onpick={(lat, lon) => addPoint(`Point ${Math.abs(lat).toFixed(3)}°S ${lon.toFixed(3)}°E`, lat, lon)}>
   <div class="instr">
     {#if site}
@@ -256,6 +259,9 @@
   </aside>
 
   <section class="detail">
+    {#if compareSites.length >= 2}
+      <Compare sites={compareSites} {date} onpick={(d) => (date = d)} onremove={toggleCompare} />
+    {/if}
     {#if site}
       <div class="title">
         <h2>{site.name}<span>: two-year record</span></h2>
@@ -271,10 +277,6 @@
       <p class="window">Share of every hour from Nov 2026 to Dec 2028.</p>
       {#if sunNever}
         <p class="psr-detail"><strong>Permanently shadowed region.</strong> The terrain blocks the Sun at every hour of the window{earthNever ? ", and Earth too" : ""}. Not a landing site for a solar-powered lander, but a prime target for water ice: pair it with a lit rim nearby, like the Artemis plan of landing on a rim and exploring the shadow.</p>
-      {/if}
-
-      {#if compareSites.length >= 2}
-        <Compare sites={compareSites} {date} onpick={(d) => (date = d)} onremove={toggleCompare} />
       {/if}
 
       <figure>

@@ -30,11 +30,18 @@
     const v = stats.filter((s) => s).map((s) => s![key]);
     return dir === "max" ? Math.max(...v) : Math.min(...v);
   };
+  // a "best" mark only means something when the sites differ
+  const isBest = (key: (typeof rows)[number]["key"], dir: "max" | "min", v: number) => {
+    const vals = stats.filter((s) => s).map((s) => s![key]);
+    return vals.length > 1 && v === best(key, dir) && vals.some((x) => x !== v);
+  };
+  const fmt = (key: string, v: number) => (key === "dark" && v === 0 ? "no night" : fmtDuration(v));
   const from = $derived(sites[0] && indexAt(sites[0], date) >= 0 ? timeAt(sites[0], indexAt(sites[0], date)).toISOString().slice(0, 10) : "");
 </script>
 
 <section class="compare" aria-labelledby="cmp-title">
   <h2 id="cmp-title">Compare sites: {DAYS} days from {from} UTC</h2>
+  <p class="frame">A landing-window view: hours in the {DAYS} days after the selected time. The site table shows the whole two-year record.</p>
   <div class="scroll-x"><table>
     <thead>
       <tr>
@@ -48,11 +55,10 @@
     </thead>
     <tbody>
       {#each rows as r}
-        {@const b = best(r.key, r.best)}
         <tr>
           <th scope="row">{r.label}</th>
           {#each stats as st}
-            <td class="num" class:best={st && st[r.key] === b && sites.length > 1}>{st ? fmtDuration(st[r.key]) : "outside window"}</td>
+            <td class="num" class:best={st && isBest(r.key, r.best, st[r.key])}>{st ? fmt(r.key, st[r.key]) : "outside window"}</td>
           {/each}
         </tr>
       {/each}
@@ -70,6 +76,7 @@
 <style>
   .compare { border: 1px solid var(--line); border-radius: 6px; padding: 16px; margin-bottom: 28px; }
   h2 { font-size: 15px; font-weight: 600; margin: 0 0 12px; }
+  .frame { margin: -6px 0 12px; font-size: 12px; color: var(--text-dim); }
   h3 { font-size: 12px; font-weight: 600; color: var(--text-soft); margin: 14px 0 6px; }
   table { width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 8px; }
   th, td { padding: 7px 10px; border-bottom: 1px solid var(--line); text-align: left; font-weight: 400; }

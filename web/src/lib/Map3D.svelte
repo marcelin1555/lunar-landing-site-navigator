@@ -5,10 +5,11 @@
   import { fromStereo, stereoSouth } from "./free";
   import type { SiteIndex } from "./data";
 
-  let { sites, selected, hoverId = null, sunDir, busy = false, onpick, onselect, children }: {
+  let { sites, selected, hoverId = null, pinned = [], sunDir, busy = false, onpick, onselect, children }: {
     sites: SiteIndex[];
     selected: string;
     hoverId?: string | null; // site hovered elsewhere (table, verdict): highlight its pin
+    pinned?: string[]; // sites whose name must always show (verdict winners, compared sites)
     sunDir: [number, number, number] | null; // unit vector to the Sun, MOON_ME frame
     busy?: boolean;
     onpick: (lat: number, lon: number) => void;
@@ -33,7 +34,7 @@
   let height = $state(520);
   let hover = $state<{ lat: number; lon: number } | null>(null);
   let hoverPin = $state<string | null>(null);
-  let labels = $state<{ id: string; name: string; x: number; y: number; kind: "sel" | "hot" | "dim" }[]>([]);
+  let labels = $state<{ id: string; name: string; x: number; y: number; dy: number; kind: "sel" | "hot" | "key" | "dim" }[]>([]);
   let failed = $state("");
   let ready = $state(false);
 
@@ -169,25 +170,32 @@
     }
   }
 
-  // every pin gets a name; the selected and hovered ones win, the rest drop out where they would overlap
+  // every pin gets a name. Selected, hovered and key sites (verdict winners, compared) always show:
+  // when they would overlap they move above or below their pin on a leader line. Other names drop out.
   function projectLabels() {
     if (!pins) return;
     const v = new THREE.Vector3();
     const all = pins.children.map((p) => {
       v.copy(p.position).add(new THREE.Vector3(0, 10, 0)).project(camera);
       const s = sites.find((q) => q.id === p.userData.id)!;
-      const kind: "sel" | "hot" | "dim" = s.id === selected ? "sel" : s.id === hoverPin || s.id === hoverId ? "hot" : "dim";
-      return { id: s.id, name: s.name, x: (v.x * 0.5 + 0.5) * width, y: (-v.y * 0.5 + 0.5) * height, kind, front: v.z < 1 };
+      const kind = s.id === selected ? "sel" : s.id === hoverPin || s.id === hoverId ? "hot" : pinned.includes(s.id) ? "key" : "dim";
+      return { id: s.id, name: s.name, x: (v.x * 0.5 + 0.5) * width, y: (-v.y * 0.5 + 0.5) * height, dy: 0, kind, front: v.z < 1 } as const;
     }).filter((l) => l.front);
-    const rank = { sel: 0, hot: 1, dim: 2 };
+    const rank = { sel: 0, hot: 1, key: 2, dim: 3 };
     all.sort((a, b) => rank[a.kind] - rank[b.kind]);
     const boxes: { x0: number; x1: number; y0: number; y1: number }[] = [];
-    labels = all.filter((l) => {
-      const w = l.name.length * 7 + 12, b = { x0: l.x - w / 2, x1: l.x + w / 2, y0: l.y - 22, y1: l.y };
-      if (l.kind === "dim" && boxes.some((o) => b.x0 < o.x1 && b.x1 > o.x0 && b.y0 < o.y1 && b.y1 > o.y0)) return false;
-      boxes.push(b);
-      return true;
-    });
+    const placed: (typeof labels)[number][] = [];
+    for (const l of all) {
+      const w = l.name.length * 7 + 12;
+      const box = (dy: number) => ({ x0: l.x - w / 2, x1: l.x + w / 2, y0: l.y + dy - 22, y1: l.y + dy });
+      const free = (b: ReturnType<typeof box>) => !boxes.some((o) => b.x0 < o.x1 && b.x1 > o.x0 && b.y0 < o.y1 && b.y1 > o.y0);
+      const tries = l.kind === "dim" ? [0] : [0, -26, 52, -52, 78, -78];
+      const dy = tries.find((d) => free(box(d)));
+      if (dy === undefined && l.kind === "dim") continue;
+      boxes.push(box(dy ?? 0));
+      placed.push({ id: l.id, name: l.name, x: l.x, y: l.y, dy: dy ?? 0, kind: l.kind });
+    }
+    labels = placed;
   }
 
   function applyMode() {
@@ -200,7 +208,7 @@
   }
 
   $effect(() => {
-    sites; selected; hoverId; ready;
+    sites; selected; hoverId; pinned; ready;
     updatePins();
   });
 
@@ -265,7 +273,8 @@
     role="application" aria-label="3D terrain of the lunar south pole. Click a pin to select a site, or click the terrain to compute a new point.">
     {#if failed}<p class="fail">{failed}</p>{/if}
     {#each labels as l (l.id)}
-      <span class="label {l.kind}" style:left="{l.x}px" style:top="{l.y}px">{l.name}</span>
+      {#if l.dy}<span class="lead" style:left="{l.x}px" style:top="{Math.min(l.y, l.y + l.dy - (l.dy > 0 ? 22 : 0))}px" style:height="{Math.abs(l.dy) - (l.dy > 0 ? 22 : 0)}px"></span>{/if}
+      <span class="label {l.kind}" style:left="{l.x}px" style:top="{l.y + l.dy}px">{l.name}</span>
     {/each}
     <div class="hud">
       <span class="hint">{busy ? "Computing point…" : hover ? `${Math.abs(hover.lat).toFixed(3)}°S ${hover.lon.toFixed(3)}°E` : "Drag to orbit · click a pin or the terrain"}</span>
@@ -283,6 +292,8 @@
   .map { position: relative; height: min(68vh, 620px); min-height: 420px; background: #030405; touch-action: none; overflow: hidden; }
   .map :global(canvas) { display: block; }
   .label { position: absolute; transform: translate(-50%, -100%); font: 500 12px/1 var(--sans); padding: 4px 6px; border-radius: 2px; pointer-events: none; white-space: nowrap; }
+  .label.key { color: var(--text); background: rgb(3 4 5 / 0.85); border: 1px solid var(--line-strong); }
+  .lead { position: absolute; width: 1px; background: var(--text-dim); pointer-events: none; }
   .label.dim { color: var(--text-soft); background: rgb(3 4 5 / 0.72); }
   .label.hot { color: var(--bg); background: var(--text-soft); font-weight: 600; z-index: 1; }
   .label.sel { color: var(--bg); background: #fff; font-weight: 600; z-index: 2; }
