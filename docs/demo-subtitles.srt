@@ -1,0 +1,28 @@
+1
+00:00:00,000 --> 00:00:04,000
+Where should Artemis land?
+Sunlight means power. Earth in view means a direct link home.
+
+2
+00:00:04,000 --> 00:00:09,000
+Real terrain from NASA's LOLA, Sun and Earth from SPICE.
+The real horizon, hour by hour.
+
+3
+00:00:09,000 --> 00:00:14,000
+10 km away, the crater floor: a 20° wall. 0% Sun, 0% Earth in two years.
+Permanent shadow, where ice hides.
+
+4
+00:00:14,000 --> 00:00:21,000
+Landing today? Shackleton Rim gets more Sun overall,
+but Malapert gives 22 days of Sun and Earth vs 13.
+
+5
+00:00:21,000 --> 00:00:26,000
+Click anywhere. It computes in your browser.
+
+6
+00:00:26,000 --> 00:00:30,000
+Validated against JPL Horizons (0.005°) and NASA's PGDA maps.
+Lunar Landing Site Navigator, by Quiral Labs.
