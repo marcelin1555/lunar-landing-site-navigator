@@ -1,5 +1,8 @@
 <script lang="ts">
+  import { onMount } from "svelte";
   import { validate, LAT_LIMIT } from "./custom";
+
+  type Feature = { name: string; type: string; lat: number; lon: number; diameter_km: number };
 
   let { onadd, busy }: { onadd: (name: string, lat: number, lon: number) => void; busy: boolean } = $props();
 
@@ -7,6 +10,27 @@
   let lat = $state("");
   let lon = $state("");
   let message = $state("");
+  let features = $state<Feature[]>([]);
+  let query = $state("");
+  let picked = $state<Feature | null>(null);
+
+  onMount(async () => {
+    try {
+      const r = await fetch(`${import.meta.env.BASE_URL}data/features.json`);
+      if (r.ok) features = await r.json();
+    } catch {
+      // search is optional; manual coordinates still work
+    }
+  });
+
+  function pick() {
+    picked = features.find((f) => f.name.toLowerCase() === query.trim().toLowerCase()) ?? null;
+    if (picked) {
+      name = picked.name;
+      lat = String(picked.lat);
+      lon = String(picked.lon);
+    }
+  }
 
   function submit(e: SubmitEvent) {
     e.preventDefault();
@@ -14,13 +38,26 @@
     message = validate(la, lo) ?? "";
     if (message) return;
     onadd(name.trim() || `Point ${Math.abs(la).toFixed(3)}°S ${lo.toFixed(3)}°E`, la, lo);
-    name = lat = lon = "";
+    name = lat = lon = query = "";
+    picked = null;
   }
 </script>
 
 <form onsubmit={submit} aria-describedby="add-help">
   <h2>Add a custom point</h2>
   <p id="add-help">Any point south of {Math.abs(LAT_LIMIT)}°S. Computed in your browser on a 240 m DEM.</p>
+  {#if features.length}
+    <label class="search">Find a named feature (IAU)
+      <input list="features" bind:value={query} oninput={pick} placeholder="Shackleton, Haworth, Malapert…" />
+    </label>
+    <datalist id="features">
+      {#each features as f}<option value={f.name}>{f.type}, {f.diameter_km} km</option>{/each}
+    </datalist>
+    {#if picked}
+      <p class="hint">{picked.type}{picked.diameter_km ? `, ${picked.diameter_km} km wide` : ""}. Its center is usually the floor:
+        {picked.type === "Crater" ? "expect little or no sunlight (permanent shadow, where water ice may be)." : "check the result against nearby rims."}</p>
+    {/if}
+  {/if}
   <div class="fields">
     <label>Name <input bind:value={name} placeholder="Optional" maxlength="40" /></label>
     <label>Lat <input bind:value={lat} inputmode="decimal" placeholder="−89.45" required /></label>
@@ -42,5 +79,7 @@
   button:hover:not(:disabled) { border-color: var(--accent); }
   button:disabled { opacity: 0.6; cursor: progress; }
   input:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .search { margin-bottom: 10px; }
+  .hint { color: var(--text-soft); margin: -2px 0 10px; }
   .error { color: var(--danger); margin: 8px 0 0; }
 </style>

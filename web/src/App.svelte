@@ -161,10 +161,10 @@
             <h3>Whole window</h3>
             <p class="state">Nov 2026 to Dec 2028</p>
             <dl>
-              <dt>Sunlit</dt><dd>{site.summary.sunlit_pct}%</dd>
-              <dt>Earth in view</dt><dd>{site.summary.earth_visible_pct}%</dd>
-              <dt>Longest night</dt><dd>{fmtDuration(site.summary.longest_dark_h)}</dd>
-              <dt>Longest Earth blackout</dt><dd>{fmtDuration(site.summary.longest_no_earth_h)}</dd>
+              <dt>Sunlit</dt><dd>{site.summary.sunlit_pct.toFixed(1)}%</dd>
+              <dt>Earth in view</dt><dd>{site.summary.earth_visible_pct.toFixed(1)}%</dd>
+              <dt>Longest night</dt><dd>{site.summary.longest_dark_h >= site.time.n ? "never sunlit" : fmtDuration(site.summary.longest_dark_h)}</dd>
+              <dt>Longest Earth blackout</dt><dd>{site.summary.longest_no_earth_h >= site.time.n ? "never in view" : fmtDuration(site.summary.longest_no_earth_h)}</dd>
             </dl>
           </div>
         </div>
