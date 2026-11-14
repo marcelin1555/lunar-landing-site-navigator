@@ -5,9 +5,10 @@
   import { fromStereo, stereoSouth } from "./free";
   import type { SiteIndex } from "./data";
 
-  let { sites, selected, sunDir, busy = false, onpick, onselect, children }: {
+  let { sites, selected, hoverId = null, sunDir, busy = false, onpick, onselect, children }: {
     sites: SiteIndex[];
     selected: string;
+    hoverId?: string | null; // site hovered elsewhere (table, verdict): highlight its pin
     sunDir: [number, number, number] | null; // unit vector to the Sun, MOON_ME frame
     busy?: boolean;
     onpick: (lat: number, lon: number) => void;
@@ -32,7 +33,7 @@
   let height = $state(520);
   let hover = $state<{ lat: number; lon: number } | null>(null);
   let hoverPin = $state<string | null>(null);
-  let labels = $state<{ id: string; name: string; x: number; y: number; on: boolean }[]>([]);
+  let labels = $state<{ id: string; name: string; x: number; y: number; kind: "sel" | "hot" | "dim" }[]>([]);
   let failed = $state("");
   let ready = $state(false);
 
@@ -157,10 +158,10 @@
     pins.children.forEach((p) => { (p as THREE.Mesh).geometry.dispose(); ((p as THREE.Mesh).material as THREE.Material).dispose(); });
     pins.clear();
     for (const s of sites) {
-      const on = s.id === selected;
+      const on = s.id === selected, hot = s.id === hoverId;
       const pin = new THREE.Mesh(
-        new THREE.CylinderGeometry(on ? 1.8 : 1.1, 0.15, 18, 10),
-        new THREE.MeshBasicMaterial({ color: on ? 0xf2b544 : s.custom ? 0x4fa8e8 : 0xdfe5ee }),
+        new THREE.CylinderGeometry(on || hot ? 1.8 : 1.1, 0.15, 18, 10),
+        new THREE.MeshBasicMaterial({ color: on || hot ? 0xffffff : s.custom ? 0x4fa8e8 : 0x9aa6b6 }),
       );
       pin.position.copy(surface(s.lat, s.lon, 9));
       pin.userData.id = s.id;
@@ -168,13 +169,24 @@
     }
   }
 
+  // every pin gets a name; the selected and hovered ones win, the rest drop out where they would overlap
   function projectLabels() {
     if (!pins) return;
     const v = new THREE.Vector3();
-    labels = pins.children.map((p) => {
+    const all = pins.children.map((p) => {
       v.copy(p.position).add(new THREE.Vector3(0, 10, 0)).project(camera);
       const s = sites.find((q) => q.id === p.userData.id)!;
-      return { id: s.id, name: s.name, x: (v.x * 0.5 + 0.5) * width, y: (-v.y * 0.5 + 0.5) * height, on: (s.id === selected || s.id === hoverPin) && v.z < 1 };
+      const kind: "sel" | "hot" | "dim" = s.id === selected ? "sel" : s.id === hoverPin || s.id === hoverId ? "hot" : "dim";
+      return { id: s.id, name: s.name, x: (v.x * 0.5 + 0.5) * width, y: (-v.y * 0.5 + 0.5) * height, kind, front: v.z < 1 };
+    }).filter((l) => l.front);
+    const rank = { sel: 0, hot: 1, dim: 2 };
+    all.sort((a, b) => rank[a.kind] - rank[b.kind]);
+    const boxes: { x0: number; x1: number; y0: number; y1: number }[] = [];
+    labels = all.filter((l) => {
+      const w = l.name.length * 7 + 12, b = { x0: l.x - w / 2, x1: l.x + w / 2, y0: l.y - 22, y1: l.y };
+      if (l.kind === "dim" && boxes.some((o) => b.x0 < o.x1 && b.x1 > o.x0 && b.y0 < o.y1 && b.y1 > o.y0)) return false;
+      boxes.push(b);
+      return true;
     });
   }
 
@@ -188,7 +200,7 @@
   }
 
   $effect(() => {
-    sites; selected; ready;
+    sites; selected; hoverId; ready;
     updatePins();
   });
 
@@ -228,8 +240,8 @@
     return { kind: "ground", lat, lon };
   }
 
-  let down: { x: number; y: number } | null = null;
-  function onDown(e: PointerEvent) { down = { x: e.clientX, y: e.clientY }; }
+  let down: { x: number; y: number; t: number } | null = null;
+  function onDown(e: PointerEvent) { down = { x: e.clientX, y: e.clientY, t: performance.now() }; }
   function onMove(e: PointerEvent) {
     if (!renderer || !ready) return;
     const h = hit(e);
@@ -238,7 +250,8 @@
     renderer.domElement.style.cursor = h ? "pointer" : "grab";
   }
   function onUp(e: PointerEvent) {
-    if (!down || !ready || Math.hypot(e.clientX - down.x, e.clientY - down.y) > 4) return; // it was a drag
+    // only a short, still press counts as a click; anything else was an orbit drag
+    if (!down || !ready || Math.hypot(e.clientX - down.x, e.clientY - down.y) > 4 || performance.now() - down.t > 450) return;
     const h = hit(e);
     if (!h) return;
     if (h.kind === "pin") onselect(h.id);
@@ -252,10 +265,10 @@
     role="application" aria-label="3D terrain of the lunar south pole. Click a pin to select a site, or click the terrain to compute a new point.">
     {#if failed}<p class="fail">{failed}</p>{/if}
     {#each labels as l (l.id)}
-      {#if l.on}<span class="label" style:left="{l.x}px" style:top="{l.y}px">{l.name}</span>{/if}
+      <span class="label {l.kind}" style:left="{l.x}px" style:top="{l.y}px">{l.name}</span>
     {/each}
     <div class="hud">
-      <span>{busy ? "Computing point…" : hover ? `${Math.abs(hover.lat).toFixed(3)}°S ${hover.lon.toFixed(3)}°E` : "Drag to orbit · click a pin or the terrain"}</span>
+      <span class="hint">{busy ? "Computing point…" : hover ? `${Math.abs(hover.lat).toFixed(3)}°S ${hover.lon.toFixed(3)}°E` : "Drag to orbit · click a pin or the terrain"}</span>
       <span class="modes" role="radiogroup" aria-label="Terrain shading">
         <button role="radio" aria-checked={mode === "now"} onclick={() => (mode = "now")} onpointerdown={(e) => e.stopPropagation()} onpointerup={(e) => e.stopPropagation()}>Sun at selected time</button>
         <button role="radio" aria-checked={mode === "mean"} onclick={() => (mode = "mean")} onpointerdown={(e) => e.stopPropagation()} onpointerup={(e) => e.stopPropagation()}>Mean sunlight (PGDA)</button>
@@ -269,13 +282,17 @@
   .wrap { position: relative; border-bottom: 1px solid var(--line); }
   .map { position: relative; height: min(68vh, 620px); min-height: 420px; background: #030405; touch-action: none; overflow: hidden; }
   .map :global(canvas) { display: block; }
-  .label { position: absolute; transform: translate(-50%, -100%); font: 600 12px/1 var(--sans); color: var(--bg); background: var(--sun); padding: 4px 6px; border-radius: 2px; pointer-events: none; white-space: nowrap; }
-  .hud { position: absolute; left: 16px; right: 16px; bottom: 12px; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; font: 500 11px/1.2 var(--mono); color: var(--text-dim); pointer-events: none; }
+  .label { position: absolute; transform: translate(-50%, -100%); font: 500 12px/1 var(--sans); padding: 4px 6px; border-radius: 2px; pointer-events: none; white-space: nowrap; }
+  .label.dim { color: var(--text-soft); background: rgb(3 4 5 / 0.72); }
+  .label.hot { color: var(--bg); background: var(--text-soft); font-weight: 600; z-index: 1; }
+  .label.sel { color: var(--bg); background: #fff; font-weight: 600; z-index: 2; }
+  .hud { position: absolute; left: 16px; right: 16px; bottom: 12px; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; font: 500 12px/1.2 var(--mono); color: var(--text-soft); pointer-events: none; }
+  .hint { background: rgb(3 4 5 / 0.78); padding: 6px 8px; border-radius: 3px; }
   .modes { display: flex; pointer-events: auto; border: 1px solid var(--line-strong); border-radius: 3px; overflow: hidden; }
-  .modes button { all: unset; cursor: pointer; padding: 6px 9px; font: 500 11px/1 var(--sans); color: var(--text-dim); background: rgb(3 4 5 / 0.7); }
+  .modes button { all: unset; cursor: pointer; padding: 9px 10px; font: 500 12px/1 var(--sans); color: var(--text-dim); background: rgb(3 4 5 / 0.7); }
   .modes button + button { border-left: 1px solid var(--line-strong); }
   .modes button[aria-checked="true"] { color: var(--bg); background: var(--text-soft); }
-  .modes button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+  .modes button:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; }
   .panel { position: absolute; top: 16px; left: 16px; width: min(360px, calc(100% - 32px)); }
   .fail { position: absolute; inset: 0; display: grid; place-items: center; padding: 24px; text-align: center; color: var(--text-dim); margin: 0; }
   @media (max-width: 700px) {

@@ -35,7 +35,7 @@
 
 <section class="compare" aria-labelledby="cmp-title">
   <h2 id="cmp-title">Compare sites: {DAYS} days from {from} UTC</h2>
-  <table>
+  <div class="scroll-x"><table>
     <thead>
       <tr>
         <th scope="col">Hours in the next {DAYS} days</th>
@@ -57,7 +57,7 @@
         </tr>
       {/each}
     </tbody>
-  </table>
+  </table></div>
 
   {#each sites as s (s.id)}
     <div class="row">
@@ -78,8 +78,9 @@
   tbody th { color: var(--text-dim); }
   .num { text-align: right; font-family: var(--mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
   thead .num { font-family: var(--sans); }
-  .best { color: var(--accent); }
-  button { all: unset; cursor: pointer; color: var(--text-dim); margin-left: 6px; padding: 0 3px; }
+  .scroll-x { overflow-x: auto; }
+  .best { font-weight: 600; color: var(--text); text-decoration: underline; text-decoration-color: var(--text-dim); text-underline-offset: 4px; }
+  button { all: unset; cursor: pointer; color: var(--text-dim); margin-left: 4px; display: inline-grid; place-items: center; min-width: 24px; min-height: 24px; }
   button:hover { color: var(--danger); }
-  button:focus-visible { outline: 2px solid var(--accent); border-radius: 2px; }
+  button:focus-visible { outline: 2px solid var(--focus); border-radius: 2px; }
 </style>

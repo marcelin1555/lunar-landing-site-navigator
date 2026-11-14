@@ -72,13 +72,13 @@
   h2 { font-size: 13px; font-weight: 600; margin: 0; }
   p { color: var(--text-dim); font-size: 12px; margin: 4px 0 10px; }
   .fields { display: grid; grid-template-columns: 1.4fr 1fr 1fr auto; gap: 8px; align-items: end; }
-  label { display: grid; gap: 4px; color: var(--text-dim); font-size: 11px; }
+  label { display: grid; gap: 4px; color: var(--text-dim); font-size: 12px; }
   input, button { font: 500 13px/1 var(--mono); color: var(--text); background: var(--surface-2); border: 1px solid var(--line-strong); border-radius: 4px; padding: 8px; min-width: 0; }
   input::placeholder { color: var(--text-dim); opacity: 0.7; }
   button { font-family: var(--sans); cursor: pointer; background: var(--surface-3); }
-  button:hover:not(:disabled) { border-color: var(--accent); }
+  button:hover:not(:disabled) { border-color: var(--focus); }
   button:disabled { opacity: 0.6; cursor: progress; }
-  input:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  input:focus-visible, button:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; }
   .search { margin-bottom: 10px; }
   @media (max-width: 520px) {
     .fields { grid-template-columns: 1fr 1fr; }

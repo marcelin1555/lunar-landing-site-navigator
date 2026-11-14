@@ -25,6 +25,7 @@
   let playing = $state(false);
   let compare = $state<string[]>([]);
   let compareSites = $state<Site[]>([]);
+  let hoverId = $state<string | null>(null);
   $effect(() => {
     const ids = [...compare];
     Promise.all(ids.map((id) => {
@@ -42,6 +43,20 @@
     const d = date;
     sunDirAt(d).then((v) => (sunDir = v)).catch(() => (sunDir = null));
   });
+
+  // one line per mission need, read straight off the two-year summaries of the candidate sites
+  const verdict = $derived.by(() => {
+    if (!sites.length) return [];
+    const best = (key: keyof SiteIndex["summary"], dir: 1 | -1) => [...sites].sort((a, b) => dir * (a.summary[key] - b.summary[key]))[0];
+    const a = best("sunlit_pct", -1), b = best("longest_dark_h", 1), c = best("sun_and_earth_pct", -1);
+    return [
+      { need: "Most sunlight overall", site: a, value: `${a.summary.sunlit_pct.toFixed(1)}% of hours`, tone: "sun" },
+      { need: "Shortest night, smallest battery", site: b, value: `longest night ${fmtDuration(b.summary.longest_dark_h)}`, tone: "sun" },
+      { need: "Power and a direct Earth link together", site: c, value: `${c.summary.sun_and_earth_pct.toFixed(1)}% of hours`, tone: "both" },
+    ];
+  });
+  const sunNever = $derived(!!site && site.summary.sunlit_pct === 0);
+  const earthNever = $derived(!!site && site.summary.earth_visible_pct === 0);
 
   const allSites = $derived<SiteIndex[]>([
     ...sites,
@@ -146,15 +161,20 @@
 </script>
 
 <header>
-  <h1>Lunar Landing Site Navigator</h1>
-  <p>Where the Sun and Earth can be seen from the lunar south pole, over the real terrain, hour by hour.</p>
+  <div>
+    <h1>Lunar Landing Site Navigator</h1>
+    <p>Where the Sun and Earth can be seen from the lunar south pole, over the real terrain, hour by hour.</p>
+  </div>
+  <a class="badge" href="https://github.com/marcelin1555/lunar-landing-site-navigator/blob/main/docs/validation.md">
+    Validated: JPL Horizons ±0.005° · NASA PGDA maps ±1.5 pts
+  </a>
 </header>
 
 {#if error}
   <p class="error" role="alert">{error}</p>
 {/if}
 
-<Map3D sites={allSites} {selected} {sunDir} {busy} onselect={select}
+<Map3D sites={allSites} {selected} {hoverId} {sunDir} {busy} onselect={select}
   onpick={(lat, lon) => addPoint(`Point ${Math.abs(lat).toFixed(3)}°S ${lon.toFixed(3)}°E`, lat, lon)}>
   <div class="instr">
     {#if site}
@@ -187,17 +207,20 @@
       <dl class="rows">
         <div class="row" class:up={now.sunUp}>
           <dt><i class="dot sun"></i>Sun</dt>
-          <dd class="state">{now.sunUp ? `Up · ${Math.round(now.sunFrac * 100)}% of disk` : now.sunFrac > 0 ? `Setting · ${Math.round(now.sunFrac * 100)}%` : "Below terrain"}</dd>
-          <dd class="next">{now.sunUp ? "sets in" : "rises in"} <b>{fmtDuration(now.sunChange)}</b></dd>
-          <dd class="sub">elevation {fmtDeg(now.sunEl)} · {fmtDeg(now.sunAbove)} over terrain</dd>
+          <dd class="state">{sunNever ? "Never in view, 2026–2028" : now.sunUp ? `Up · ${Math.round(now.sunFrac * 100)}% of disk` : now.sunFrac > 0 ? `Partly up · ${Math.round(now.sunFrac * 100)}% of disk` : "Hidden by terrain"}</dd>
+          {#if !sunNever}<dd class="next">{now.sunUp ? "sets in" : "rises in"} <b>{fmtDuration(now.sunChange)}</b></dd>{/if}
+          <dd class="sub">{fmtDeg(now.sunAbove)} over terrain · {fmtDeg(now.sunEl)} vs flat horizon</dd>
         </div>
         <div class="row" class:up={now.earthUp}>
           <dt><i class="dot earth"></i>Earth</dt>
-          <dd class="state">{now.earthUp ? "In view · direct link" : "Hidden · no direct link"}</dd>
-          <dd class="next">{now.earthUp ? "sets in" : "rises in"} <b>{fmtDuration(now.earthChange)}</b></dd>
-          <dd class="sub">elevation {fmtDeg(now.earthEl)} · {fmtDeg(now.earthAbove)} over terrain</dd>
+          <dd class="state">{earthNever ? "Never in view, 2026–2028" : now.earthUp ? "In view · direct link" : "Hidden · no direct link"}</dd>
+          {#if !earthNever}<dd class="next">{now.earthUp ? "sets in" : "rises in"} <b>{fmtDuration(now.earthChange)}</b></dd>{/if}
+          <dd class="sub">{fmtDeg(now.earthAbove)} over terrain · {fmtDeg(now.earthEl)} vs flat horizon</dd>
         </div>
       </dl>
+      {#if sunNever}
+        <p class="psr"><strong>Permanently shadowed.</strong> No sunlight in the whole 2026–2028 window{earthNever ? " and no direct line of sight to Earth" : ""}. A cold trap: this is where water ice can survive.</p>
+      {/if}
     {:else if site}
       <p class="out">Outside the computed window ({meta?.window_utc[0].slice(0, 10)} to {meta?.window_utc[1].slice(0, 10)}).</p>
     {/if}
@@ -209,8 +232,23 @@
 
 <main>
   <aside>
+    {#if verdict.length}
+      <section class="verdict" aria-labelledby="verdict-title">
+        <h2 id="verdict-title">Best site by mission need</h2>
+        <ol>
+          {#each verdict as v}
+            <li>
+              <span class="need">{v.need}</span>
+              <button class="pick {v.tone}" onclick={() => select(v.site.id)} onmouseenter={() => (hoverId = v.site.id)} onmouseleave={() => (hoverId = null)}>{v.site.name}</button>
+              <span class="val">{v.value}</span>
+            </li>
+          {/each}
+        </ol>
+        <p>From hourly Sun and Earth visibility over the real terrain, Nov 2026 to Dec 2028, across the 10 candidate sites.</p>
+      </section>
+    {/if}
     {#if sites.length}
-      <div class="scroll-x"><SiteTable sites={allSites} {selected} {compare} {windowH} onselect={select} onremove={removePoint} ontoggle={toggleCompare} /></div>
+      <div class="scroll-x"><SiteTable sites={allSites} {selected} {compare} {windowH} onselect={select} onremove={removePoint} ontoggle={toggleCompare} onhover={(id) => (hoverId = id)} /></div>
       <AddPoint onadd={addPoint} {busy} />
     {:else if !error}
       <p class="muted">Loading sites…</p>
@@ -220,17 +258,20 @@
   <section class="detail">
     {#if site}
       <div class="title">
-        <h2>{site.name}</h2>
+        <h2>{site.name}<span>: two-year record</span></h2>
         <p class="coords">{fmtLatLon(site.lat, site.lon)} · ground {site.ground_height_m.toFixed(0)} m · observer {site.observer_height_m} m above ground</p>
       </div>
       <dl class="strip">
         <div><dt>Sunlit</dt><dd>{site.summary.sunlit_pct.toFixed(1)}%</dd></div>
         <div><dt>Earth in view</dt><dd>{site.summary.earth_visible_pct.toFixed(1)}%</dd></div>
-        <div><dt>Sun and Earth</dt><dd>{site.summary.sun_and_earth_pct.toFixed(1)}%</dd></div>
-        <div><dt>Longest night</dt><dd>{site.summary.longest_dark_h >= site.time.n ? "never lit" : fmtDuration(site.summary.longest_dark_h)}</dd></div>
-        <div><dt>Longest Earth blackout</dt><dd>{site.summary.longest_no_earth_h >= site.time.n ? "never in view" : fmtDuration(site.summary.longest_no_earth_h)}</dd></div>
+        <div><dt>Sun &amp; Earth</dt><dd>{site.summary.sun_and_earth_pct.toFixed(1)}%</dd></div>
+        <div><dt>Longest night</dt><dd>{sunNever ? "whole window" : fmtDuration(site.summary.longest_dark_h)}</dd></div>
+        <div><dt>Longest Earth blackout</dt><dd>{earthNever ? "whole window" : fmtDuration(site.summary.longest_no_earth_h)}</dd></div>
       </dl>
       <p class="window">Share of every hour from Nov 2026 to Dec 2028.</p>
+      {#if sunNever}
+        <p class="psr-detail"><strong>Permanently shadowed region.</strong> The terrain blocks the Sun at every hour of the window{earthNever ? ", and Earth too" : ""}. Not a landing site for a solar-powered lander, but a prime target for water ice: pair it with a lit rim nearby, like the Artemis plan of landing on a rim and exploring the shadow.</p>
+      {/if}
 
       {#if compareSites.length >= 2}
         <Compare sites={compareSites} {date} onpick={(d) => (date = d)} onremove={toggleCompare} />
@@ -263,26 +304,29 @@
 </main>
 
 <style>
-  header { padding: 18px 24px 16px; border-bottom: 1px solid var(--line); display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 20px; }
-  h1 { font-size: 18px; font-weight: 600; letter-spacing: -0.01em; margin: 0; }
-  header p { margin: 0; color: var(--text-dim); font-size: 13px; }
+  header { padding: 16px 24px; border-bottom: 1px solid var(--line); display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 24px; }
+  h1 { font-size: 22px; font-weight: 600; letter-spacing: -0.015em; margin: 0; }
+  header p { margin: 2px 0 0; color: var(--text-dim); font-size: 13px; }
+  .badge { font: 500 12px/1 var(--mono); color: var(--text-soft); text-decoration: none; border: 1px solid var(--line-strong); border-radius: 3px; padding: 8px 10px; }
+  .badge:hover { color: var(--text); border-color: var(--text-dim); }
+  .badge:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
   .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
 
   .instr { background: rgb(6 8 11 / 0.84); backdrop-filter: blur(6px); border: 1px solid var(--line-strong); border-radius: 4px; padding: 14px 16px; box-shadow: 0 8px 24px rgb(0 0 0 / 0.45); }
   .instr-head h2 { font-size: 17px; font-weight: 600; margin: 0; letter-spacing: -0.01em; }
-  .instr-head .coords { font: 500 11px/1.4 var(--mono); color: var(--text-dim); }
+  .instr-head .coords { font: 500 12px/1.4 var(--mono); color: var(--text-dim); }
   .clock { display: flex; align-items: center; gap: 6px; margin-top: 12px; }
   .clock input { flex: 1; min-width: 0; }
-  .utc { font: 500 11px/1 var(--mono); color: var(--text-dim); }
+  .utc { font: 500 12px/1 var(--mono); color: var(--text-dim); }
   .steps { display: grid; grid-template-columns: 1fr 1fr 1.6fr 1fr 1fr; gap: 4px; margin-top: 6px; }
   .instr input, .instr button { font: 500 12px/1 var(--mono); color: var(--text); background: var(--surface-2); border: 1px solid var(--line-strong); border-radius: 3px; padding: 7px 8px; color-scheme: dark; }
-  .instr button { cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+  .instr button { cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 30px; }
   .instr button:hover { border-color: var(--text-dim); }
-  .instr button.play { font-family: var(--sans); font-weight: 600; background: var(--sun); color: var(--bg); border-color: var(--sun); }
-  .instr button.play[aria-pressed="true"] { background: transparent; color: var(--sun); }
+  .instr button.play { font-family: var(--sans); font-weight: 600; background: var(--text); color: var(--bg); border-color: var(--text); }
+  .instr button.play[aria-pressed="true"] { background: transparent; color: var(--text); }
   .play svg { width: 10px; height: 10px; fill: currentColor; }
   .instr button.now { font-family: var(--sans); }
-  .instr input:focus-visible, .instr button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .instr input:focus-visible, .instr button:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; }
   .rows { margin: 14px 0 0; display: grid; gap: 10px; }
   .row { display: grid; grid-template-columns: auto 1fr; column-gap: 12px; row-gap: 2px; padding-top: 10px; border-top: 1px solid var(--line); }
   .row dt { grid-row: span 3; font-size: 12px; font-weight: 600; color: var(--text-soft); display: flex; align-items: flex-start; gap: 6px; width: 52px; }
@@ -291,16 +335,33 @@
   .row.up .state { color: var(--text); }
   .row .next { font-size: 12px; color: var(--text-dim); }
   .row .next b { font: 500 12px/1 var(--mono); color: var(--text); }
-  .row .sub { font: 500 11px/1.4 var(--mono); color: var(--text-dim); }
+  .row .sub { font: 500 12px/1.4 var(--mono); color: var(--text-dim); }
   .dot { width: 8px; height: 8px; border-radius: 50%; margin-top: 4px; flex: none; }
   .dot.sun { background: var(--sun); }
   .dot.earth { background: var(--earth); }
-  .light, .out { margin: 12px 0 0; font-size: 11px; color: var(--text-dim); }
+  .light, .out { margin: 12px 0 0; font-size: 12px; color: var(--text-dim); }
+  .psr { margin: 12px 0 0; font-size: 13px; line-height: 1.45; color: var(--text-soft); border-top: 1px solid var(--line); padding-top: 10px; }
+  .psr strong, .psr-detail strong { color: var(--earth); }
+  .psr-detail { max-width: 70ch; color: var(--text-soft); line-height: 1.55; margin: -12px 0 28px; }
 
-  main { display: grid; grid-template-columns: minmax(320px, 420px) 1fr; }
+  .verdict { padding: 4px 10px 18px; border-bottom: 1px solid var(--line); margin-bottom: 14px; }
+  .verdict h2 { font-size: 15px; font-weight: 600; margin: 0 0 10px; }
+  .verdict ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+  .verdict li { display: grid; grid-template-columns: 1fr auto; column-gap: 12px; }
+  .verdict .need { grid-column: 1 / -1; font-size: 12px; color: var(--text-dim); }
+  .verdict .pick { all: unset; cursor: pointer; font-size: 15px; font-weight: 600; text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 4px; min-height: 24px; }
+  .verdict .pick.sun { text-decoration-color: var(--sun); }
+  .verdict .pick.both { text-decoration-color: var(--earth); }
+  .verdict .pick:hover { color: var(--text); text-decoration-thickness: 2px; }
+  .verdict .pick:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+  .verdict .val { font: 500 12px/24px var(--mono); color: var(--text-soft); text-align: right; }
+  .verdict p { margin: 12px 0 0; font-size: 12px; color: var(--text-dim); }
+
+  main { display: grid; grid-template-columns: minmax(340px, 470px) 1fr; }
   aside { border-right: 1px solid var(--line); padding: 16px 6px; }
   .detail { padding: 24px 28px 40px; min-width: 0; }
-  .title h2 { font-size: 24px; font-weight: 600; margin: 0; letter-spacing: -0.01em; }
+  .title h2 { font-size: 20px; font-weight: 600; margin: 0; letter-spacing: -0.01em; }
+  .title h2 span { color: var(--text-dim); font-weight: 400; }
   .coords { font-family: var(--mono); color: var(--text-dim); font-size: 12px; margin: 6px 0 20px; }
   .strip { display: flex; flex-wrap: wrap; gap: 12px 36px; margin: 0; }
   .strip dt { font-size: 12px; color: var(--text-dim); }

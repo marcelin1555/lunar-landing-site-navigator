@@ -52,10 +52,10 @@
     {/each}
     <line class="zero" x1={m.left} x2={width - m.right} y1={y(0)} y2={y(0)} />
 
-    <path class="earth-path" d={ln(earthPts)} />
-    <path class="sun-path" d={ln(sunPts)} />
     <path class="terrain" d={terrain} />
     <path class="ridge" d={ln(closedHz)} />
+    <path class="earth-path" d={ln(earthPts)} />
+    <path class="sun-path" d={ln(sunPts)} />
 
     {#if earthNow}
       <circle class="earth-now" cx={x(earthNow[0])} cy={y(earthNow[1])} r="6" />
@@ -71,11 +71,11 @@
   svg { display: block; overflow: visible; }
   .grid { stroke: var(--line); stroke-width: 1; }
   .zero { stroke: var(--line-strong); stroke-dasharray: 2 4; }
-  .tick { fill: var(--text-dim); font: 500 11px/1 var(--mono); }
+  .tick { fill: var(--text-dim); font: 500 12px/1 var(--mono); }
   .terrain { fill: var(--terrain); }
   .ridge { fill: none; stroke: var(--ridge); stroke-width: 1.25; }
-  .sun-path { fill: none; stroke: var(--sun); stroke-width: 1.5; opacity: 0.55; }
-  .earth-path { fill: none; stroke: var(--earth); stroke-width: 1.5; opacity: 0.55; }
+  .sun-path { fill: none; stroke: var(--sun); stroke-width: 1.5; opacity: 0.7; stroke-dasharray: none; }
+  .earth-path { fill: none; stroke: var(--earth); stroke-width: 1.5; opacity: 0.7; }
   .sun-now { fill: var(--sun); stroke: var(--bg); stroke-width: 2; }
   .earth-now { fill: var(--earth); stroke: var(--bg); stroke-width: 2; }
 </style>

@@ -71,12 +71,12 @@
 <style>
   .timeline { width: 100%; }
   svg { display: block; cursor: crosshair; }
-  svg:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
+  svg:focus-visible { outline: 2px solid var(--focus); outline-offset: 4px; }
   .track { fill: var(--surface-2); }
   .sun { fill: var(--sun); }
   .earth { fill: var(--earth); }
   .label { fill: var(--text-dim); font: 500 12px/1 var(--sans); }
-  .tick { fill: var(--text-dim); font: 500 11px/1 var(--mono); }
+  .tick { fill: var(--text-dim); font: 500 12px/1 var(--mono); }
   .tickline { stroke: var(--bg); stroke-width: 1; opacity: 0.6; }
   .now { stroke: var(--text); stroke-width: 2; }
 </style>

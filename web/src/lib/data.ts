@@ -75,10 +75,10 @@ export function horizonAt(s: Site, az: number): number {
 }
 
 export function fmtDuration(h: number | null): string {
-  if (h === null) return "beyond data window";
+  if (h === null) return "after Dec 2028";
   const d = Math.floor(h / 24);
   const r = Math.round(h - d * 24);
-  return d > 0 ? `${d} d ${r} h` : `${r} h`;
+  return d > 0 ? `${d}d ${r}h` : `${r}h`;
 }
 
 export const fmtDeg = (v: number) => `${v >= 0 ? "+" : "−"}${Math.abs(v).toFixed(2)}°`;
