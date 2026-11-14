@@ -8,12 +8,15 @@
 
 | # | Time | What is on screen | Subtitle |
 |---|---|---|---|
-| 1 | 0–4 s | Full app at load; press **Play**: shadows sweep across the real south pole as the Sun circles | Where should Artemis land? Sunlight means power. Earth in view means a direct link home. |
+| 1 | 0–4 s | Open the **film link** (below): full-screen terrain, the camera orbits slowly and the shadows sweep as the real Sun circles. Record 4 s, then switch to the normal app tab | Where should Artemis land? Sunlight means power. Earth in view means a direct link home. |
 | 2 | 4–9 s | Click the **Shackleton Rim** pin; the readout and skyline update | Real terrain from NASA's LOLA, Sun and Earth from SPICE. The real horizon, hour by hour. |
 | 3 | 9–14 s | Type "Shackleton" in the feature search, click Compute; the skyline turns into a wall | 10 km away, the crater floor: a 20° wall. 0% Sun, 0% Earth in two years. Permanent shadow, where ice hides. |
 | 4 | 14–21 s | Open the compare link (Malapert, Shackleton Rim, Nobile Rim 1); hover the table | Landing today? Shackleton Rim gets more Sun overall, but Malapert gives 22 days of Sun *and* Earth vs 13. |
 | 5 | 21–26 s | Click the 3D terrain on an empty ridge; a new point appears in the table in under a second | Click anywhere. It computes in your browser. |
 | 6 | 26–30 s | Scroll to the footer (method and validation) | Validated against JPL Horizons (0.005°) and NASA's PGDA maps. Lunar Landing Site Navigator, by Quiral Labs. |
+
+**Film link for shot 1:** https://marcelin1555.github.io/lunar-landing-site-navigator/?film
+It hides the panels, starts at the current time, orbits the camera slowly and runs time at about 25 hours per second (one lunar day in about 30 s). Only the key sites keep their names. Reload the page to restart. Wait about 2 s after loading, so the terrain and the time start together, before you begin recording.
 
 ## Recording checklist
 - [ ] Browser at 1440×900 or larger, zoom 100%, bookmarks bar hidden, no extensions visible.

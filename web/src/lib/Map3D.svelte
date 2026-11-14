@@ -5,11 +5,12 @@
   import { fromStereo, stereoSouth } from "./free";
   import type { SiteIndex } from "./data";
 
-  let { sites, selected, hoverId = null, pinned = [], sunDir, busy = false, onpick, onselect, children }: {
+  let { sites, selected, hoverId = null, pinned = [], film = false, sunDir, busy = false, onpick, onselect, children }: {
     sites: SiteIndex[];
     selected: string;
     hoverId?: string | null; // site hovered elsewhere (table, verdict): highlight its pin
     pinned?: string[]; // sites whose name must always show (verdict winners, compared sites)
+    film?: boolean; // recording mode: full screen, slow orbit, key names only
     sunDir: [number, number, number] | null; // unit vector to the Sun, MOON_ME frame
     busy?: boolean;
     onpick: (lat: number, lon: number) => void;
@@ -77,6 +78,11 @@
     controls.minDistance = 30;
     controls.maxDistance = 1400;
     controls.target.set(0, -8, 0);
+    if (film) {
+      camera.position.set(0, 190, 330); // lower than the default, so ridges throw long shadows toward the camera
+      controls.autoRotate = true;
+      controls.autoRotateSpeed = 0.8; // about 140 degrees in a 30 s clip
+    }
 
     fill = new THREE.HemisphereLight(0x8fa3bf, 0x05070a, 0.05); // faint earthshine, so shadows read as black
     sun = new THREE.DirectionalLight(0xfff4e0, 3.2);
@@ -190,6 +196,7 @@
       const w = l.name.length * 7 + 12;
       const box = (dy: number) => ({ x0: l.x - w / 2, x1: l.x + w / 2, y0: l.y + dy - 22, y1: l.y + dy });
       const free = (b: ReturnType<typeof box>) => !boxes.some((o) => b.x0 < o.x1 && b.x1 > o.x0 && b.y0 < o.y1 && b.y1 > o.y0);
+      if (film && l.kind === "dim") continue;
       const tries = l.kind === "dim" ? [0] : [0, -26, 52, -52, 78, -78];
       const dy = tries.find((d) => free(box(d)));
       if (dy === undefined && l.kind === "dim") continue;
@@ -268,7 +275,7 @@
   }
 </script>
 
-<div class="wrap">
+<div class="wrap" class:film>
   <div class="map" bind:this={host} bind:clientWidth={width} bind:clientHeight={height}
     onpointerdown={onDown} onpointermove={onMove} onpointerup={onUp}
     role="application" aria-label="3D terrain of the lunar south pole. Click a pin to select a site, or click the terrain to compute a new point.">
@@ -277,13 +284,13 @@
       {#if l.dy}<span class="lead" style:left="{l.x}px" style:top="{Math.min(l.y, l.y + l.dy - (l.dy > 0 ? 22 : 0))}px" style:height="{Math.abs(l.dy) - (l.dy > 0 ? 22 : 0)}px"></span>{/if}
       <span class="label {l.kind}" style:left="{l.x}px" style:top="{l.y + l.dy}px">{l.name}</span>
     {/each}
-    <div class="hud">
+    {#if !film}<div class="hud">
       <span class="hint">{busy ? "Computing point…" : hover ? `${Math.abs(hover.lat).toFixed(3)}°S ${hover.lon.toFixed(3)}°E` : "Drag to orbit · click a pin or the terrain"}</span>
       <span class="modes" role="radiogroup" aria-label="Terrain shading">
         <button role="radio" aria-checked={mode === "now"} onclick={() => (mode = "now")} onpointerdown={(e) => e.stopPropagation()} onpointerup={(e) => e.stopPropagation()}>Sun at selected time</button>
         <button role="radio" aria-checked={mode === "mean"} onclick={() => (mode = "mean")} onpointerdown={(e) => e.stopPropagation()} onpointerup={(e) => e.stopPropagation()}>Mean sunlight (PGDA)</button>
       </span>
-    </div>
+    </div>{/if}
   </div>
   {#if children}<div class="panel">{@render children()}</div>{/if}
 </div>
@@ -306,6 +313,8 @@
   .modes button + button { border-left: 1px solid var(--line-strong); }
   .modes button[aria-checked="true"] { color: var(--bg); background: var(--text-soft); }
   .modes button:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; }
+  .film .map { height: 100vh; min-height: 0; }
+  .film .panel { width: auto; }
   .panel { position: absolute; top: 16px; left: 16px; width: min(360px, calc(100% - 32px)); }
   .fail { position: absolute; inset: 0; display: grid; place-items: center; padding: 24px; text-align: center; color: var(--text-dim); margin: 0; }
   @media (max-width: 700px) {

@@ -26,6 +26,8 @@
   let compare = $state<string[]>([]);
   let compareSites = $state<Site[]>([]);
   let hoverId = $state<string | null>(null);
+  // ?film: recording mode for the demo video. Full-screen map, slow orbit, time running from now
+  const film = new URLSearchParams(location.search).has("film");
   $effect(() => {
     const ids = [...compare];
     Promise.all(ids.map((id) => {
@@ -79,6 +81,7 @@
       if (shared) await addPoint("Shared point", Number(shared[1]), Number(shared[2]));
       else select(sites.some((s) => s.id === hash) ? hash : defaultId);
       for (const p of points) if (!computed[p.id]) computed[p.id] = await computePoint(p);
+      if (film) setTimeout(() => (playing = true), 1500); // let the terrain load first
     } catch (e) {
       error = (e as Error).message;
     }
@@ -163,6 +166,7 @@
   });
 </script>
 
+{#if !film}
 <header>
   <div>
     <h1>Lunar Landing Site Navigator</h1>
@@ -176,9 +180,17 @@
 {#if error}
   <p class="error" role="alert">{error}</p>
 {/if}
+{/if}
 
-<Map3D sites={allSites} {selected} {hoverId} pinned={keyIds} {sunDir} {busy} onselect={select}
+<Map3D sites={allSites} {selected} {hoverId} pinned={keyIds} {film} {sunDir} {busy} onselect={select}
   onpick={(lat, lon) => addPoint(`Point ${Math.abs(lat).toFixed(3)}°S ${lon.toFixed(3)}°E`, lat, lon)}>
+  {#if film}
+    <div class="film-card">
+      <p class="film-title">Lunar south pole · real terrain, real Sun</p>
+      <p class="film-time">{date.toISOString().slice(0, 16).replace("T", " ")} UTC</p>
+      {#if now && site}<p class="film-site">{site.name}: Sun {now.sunUp ? "up" : "hidden"} · Earth {now.earthUp ? "in view" : "hidden"}</p>{/if}
+    </div>
+  {:else}
   <div class="instr">
     {#if site}
       <div class="instr-head">
@@ -231,8 +243,10 @@
       <p class="light">Map lit by the Sun at this time: over {subsolar.lon.toFixed(0)}°E, {fmtDeg(subsolar.elPole)} at the pole.</p>
     {/if}
   </div>
+  {/if}
 </Map3D>
 
+{#if !film}
 <main>
   <aside>
     {#if verdict.length}
@@ -304,8 +318,14 @@
     {/if}
   </section>
 </main>
+{/if}
 
 <style>
+  .film-card { display: inline-grid; gap: 4px; background: rgb(3 4 5 / 0.72); border: 1px solid var(--line); border-radius: 4px; padding: 12px 14px; }
+  .film-card p { margin: 0; }
+  .film-title { font-size: 15px; font-weight: 600; letter-spacing: -0.01em; }
+  .film-time { font: 500 20px/1.2 var(--mono); font-variant-numeric: tabular-nums; }
+  .film-site { font: 500 12px/1.4 var(--mono); color: var(--text-soft); }
   header { padding: 16px 24px; border-bottom: 1px solid var(--line); display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 24px; }
   h1 { font-size: 22px; font-weight: 600; letter-spacing: -0.015em; margin: 0; }
   header p { margin: 2px 0 0; color: var(--text-dim); font-size: 13px; }
