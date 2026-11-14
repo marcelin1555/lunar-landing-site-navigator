@@ -15,6 +15,7 @@
   --danger: #ff7a6b;
   --sans: "IBM Plex Sans", system-ui, sans-serif;
   --mono: "IBM Plex Mono", ui-monospace, monospace;
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
   color-scheme: dark;
 }
 
@@ -25,3 +26,7 @@ html, body { margin: 0; background: var(--bg); color: var(--text); font: 400 14p
 ::-webkit-scrollbar-track { background: var(--bg); }
 ::-webkit-scrollbar-thumb { background: var(--line-strong); border-radius: 5px; }
 a { color: var(--earth); text-underline-offset: 3px; }
+button, a, label, input { -webkit-tap-highlight-color: transparent; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition-property: color, background-color, border-color, opacity !important; }
+}

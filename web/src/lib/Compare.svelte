@@ -74,7 +74,9 @@
 </section>
 
 <style>
-  .compare { border: 1px solid var(--line); border-radius: 6px; padding: 16px; margin-bottom: 28px; }
+  .compare { border: 1px solid var(--line); border-radius: 6px; padding: 16px; margin-bottom: 28px; transition: opacity 220ms var(--ease-out), transform 220ms var(--ease-out); }
+  /* appears when the second site is ticked: fade up instead of popping in */
+  @starting-style { .compare { opacity: 0; transform: translateY(8px); } }
   h2 { font-size: 15px; font-weight: 600; margin: 0 0 12px; }
   .frame { margin: -6px 0 12px; font-size: 12px; color: var(--text-dim); }
   h3 { font-size: 12px; font-weight: 600; color: var(--text-soft); margin: 14px 0 6px; }
@@ -88,6 +90,6 @@
   .scroll-x { overflow-x: auto; }
   .best { font-weight: 600; color: var(--text); text-decoration: underline; text-decoration-color: var(--text-dim); text-underline-offset: 4px; }
   button { all: unset; cursor: pointer; color: var(--text-dim); margin-left: 4px; display: inline-grid; place-items: center; min-width: 24px; min-height: 24px; }
-  button:hover { color: var(--danger); }
+  @media (hover: hover) and (pointer: fine) { button:hover { color: var(--danger); } }
   button:focus-visible { outline: 2px solid var(--focus); border-radius: 2px; }
 </style>

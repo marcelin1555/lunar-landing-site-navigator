@@ -88,7 +88,7 @@
   .best.earth { color: var(--earth); }
   .best.both { color: var(--text); text-decoration: underline; text-decoration-color: var(--earth); text-underline-offset: 4px; }
   tbody tr { cursor: pointer; }
-  tbody tr:hover { background: var(--surface-2); }
+  @media (hover: hover) and (pointer: fine) { tbody tr:hover { background: var(--surface-2); } }
   tr.selected { background: var(--surface-3); }
   tr.selected .site { color: var(--text); font-weight: 600; }
   button { all: unset; cursor: pointer; }
@@ -98,5 +98,5 @@
   .site { color: var(--text-soft); padding: 4px 0; }
   .tag { font: 500 12px/1 var(--mono); color: var(--earth); border: 1px solid color-mix(in srgb, var(--earth) 50%, transparent); border-radius: 3px; padding: 2px 4px; margin-left: 6px; }
   .remove { color: var(--text-dim); margin-left: 4px; display: inline-grid; place-items: center; min-width: 24px; min-height: 24px; vertical-align: middle; }
-  .remove:hover { color: var(--danger); }
+  @media (hover: hover) and (pointer: fine) { .remove:hover { color: var(--danger); } }
 </style>

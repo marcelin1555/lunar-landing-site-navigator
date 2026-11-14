@@ -310,7 +310,8 @@
   h1 { font-size: 22px; font-weight: 600; letter-spacing: -0.015em; margin: 0; }
   header p { margin: 2px 0 0; color: var(--text-dim); font-size: 13px; }
   .badge { font: 500 12px/1 var(--mono); color: var(--text-soft); text-decoration: none; border: 1px solid var(--line-strong); border-radius: 3px; padding: 8px 10px; }
-  .badge:hover { color: var(--text); border-color: var(--text-dim); }
+  .badge { transition: color 150ms ease, border-color 150ms ease; }
+  @media (hover: hover) and (pointer: fine) { .badge:hover { color: var(--text); border-color: var(--text-dim); } }
   .badge:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
   .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
 
@@ -323,7 +324,9 @@
   .steps { display: grid; grid-template-columns: 1fr 1fr 1.6fr 1fr 1fr; gap: 4px; margin-top: 6px; }
   .instr input, .instr button { font: 500 12px/1 var(--mono); color: var(--text); background: var(--surface-2); border: 1px solid var(--line-strong); border-radius: 3px; padding: 7px 8px; color-scheme: dark; }
   .instr button { cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 30px; }
-  .instr button:hover { border-color: var(--text-dim); }
+  .instr button { transition: transform 160ms var(--ease-out), border-color 150ms ease, background-color 150ms ease; }
+  .instr button:active { transform: scale(0.97); }
+  @media (hover: hover) and (pointer: fine) { .instr button:hover { border-color: var(--text-dim); } }
   .instr button.play { font-family: var(--sans); font-weight: 600; background: var(--text); color: var(--bg); border-color: var(--text); }
   .instr button.play[aria-pressed="true"] { background: transparent; color: var(--text); }
   .play svg { width: 10px; height: 10px; fill: currentColor; }
@@ -354,7 +357,7 @@
   .verdict .pick { all: unset; cursor: pointer; font-size: 15px; font-weight: 600; text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 4px; min-height: 24px; }
   .verdict .pick.sun { text-decoration-color: var(--sun); }
   .verdict .pick.both { text-decoration-color: var(--earth); }
-  .verdict .pick:hover { color: var(--text); text-decoration-thickness: 2px; }
+  @media (hover: hover) and (pointer: fine) { .verdict .pick:hover { color: var(--text); text-decoration-thickness: 2px; } }
   .verdict .pick:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
   .verdict .val { font: 500 12px/24px var(--mono); color: var(--text-soft); text-align: right; }
   .verdict p { margin: 12px 0 0; font-size: 12px; color: var(--text-dim); }

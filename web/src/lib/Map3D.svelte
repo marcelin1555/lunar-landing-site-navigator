@@ -301,6 +301,7 @@
   .hint { background: rgb(3 4 5 / 0.78); padding: 6px 8px; border-radius: 3px; }
   .modes { display: flex; pointer-events: auto; border: 1px solid var(--line-strong); border-radius: 3px; overflow: hidden; }
   .modes button { all: unset; cursor: pointer; padding: 9px 10px; font: 500 12px/1 var(--sans); color: var(--text-dim); background: rgb(3 4 5 / 0.7); }
+  .modes button { transition: color 150ms ease, background-color 150ms ease; }
   .modes button + button { border-left: 1px solid var(--line-strong); }
   .modes button[aria-checked="true"] { color: var(--bg); background: var(--text-soft); }
   .modes button:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; }

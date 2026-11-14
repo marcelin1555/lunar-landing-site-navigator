@@ -76,7 +76,9 @@
   input, button { font: 500 13px/1 var(--mono); color: var(--text); background: var(--surface-2); border: 1px solid var(--line-strong); border-radius: 4px; padding: 8px; min-width: 0; }
   input::placeholder { color: var(--text-dim); opacity: 0.7; }
   button { font-family: var(--sans); cursor: pointer; background: var(--surface-3); }
-  button:hover:not(:disabled) { border-color: var(--focus); }
+  button { transition: transform 160ms var(--ease-out), border-color 150ms ease; }
+  button:active:not(:disabled) { transform: scale(0.97); }
+  @media (hover: hover) and (pointer: fine) { button:hover:not(:disabled) { border-color: var(--focus); } }
   button:disabled { opacity: 0.6; cursor: progress; }
   input:focus-visible, button:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; }
   .search { margin-bottom: 10px; }
