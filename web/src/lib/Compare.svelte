@@ -65,6 +65,24 @@
     </tbody>
   </table></div>
 
+  <!-- narrow screens: one card per metric, sites as rows, nothing hidden sideways -->
+  <div class="cards">
+    {#each rows as r}
+      <dl>
+        <dt>{r.label}</dt>
+        {#each sites as s, k (s.id)}
+          {@const st = stats[k]}
+          <dd><span>{s.name}</span><b class:best={st && isBest(r.key, r.best, st[r.key])}>{st ? fmt(r.key, st[r.key]) : "outside window"}</b></dd>
+        {/each}
+      </dl>
+    {/each}
+    <p class="remove-row">
+      {#each sites as s (s.id)}
+        <button onclick={() => onremove(s.id)} aria-label="Stop comparing {s.name}">× {s.name}</button>
+      {/each}
+    </p>
+  </div>
+
   {#each sites as s (s.id)}
     <div class="row">
       <h3>{s.name}</h3>
@@ -88,6 +106,18 @@
   .num { text-align: right; font-family: var(--mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
   thead .num { font-family: var(--sans); }
   .scroll-x { overflow-x: auto; }
+  .cards { display: none; }
+  @media (max-width: 600px) {
+    .scroll-x { display: none; }
+    .cards { display: grid; gap: 12px; margin-bottom: 8px; }
+    .cards dl { margin: 0; border-bottom: 1px solid var(--line); padding-bottom: 10px; }
+    .cards dt { font-size: 12px; color: var(--text-dim); margin-bottom: 4px; }
+    .cards dd { margin: 0; display: flex; justify-content: space-between; gap: 12px; font-size: 13px; padding: 3px 0; }
+    .cards b { font: 400 13px/1.4 var(--mono); white-space: nowrap; }
+    .cards b.best { font-weight: 600; }
+    .remove-row { display: flex; flex-wrap: wrap; gap: 4px 12px; margin: 0; font-size: 12px; }
+    .remove-row button { margin: 0; padding: 0 2px; }
+  }
   .best { font-weight: 600; color: var(--text); text-decoration: underline; text-decoration-color: var(--text-dim); text-underline-offset: 4px; }
   button { all: unset; cursor: pointer; color: var(--text-dim); margin-left: 4px; display: inline-grid; place-items: center; min-width: 24px; min-height: 24px; }
   @media (hover: hover) and (pointer: fine) { button:hover { color: var(--danger); } }

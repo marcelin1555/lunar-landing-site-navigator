@@ -80,6 +80,7 @@
   caption { text-align: left; color: var(--text-dim); font-size: 12px; padding: 0 10px 10px; }
   th, td { padding: 8px 6px; border-bottom: 1px solid var(--line); text-align: left; font-weight: 400; }
   tbody th { white-space: nowrap; }
+  @media (max-width: 600px) { tbody th { white-space: normal; min-width: 78px; } th, td { padding: 8px 3px; font-size: 12px; } .cmp { width: 30px; } }
   thead th { color: var(--text-dim); font-size: 12px; }
   .num { text-align: right; font-family: var(--mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
   .unit { color: var(--text-dim); margin-left: 1px; }
@@ -96,7 +97,7 @@
   thead button { padding: 4px 0; }
   thead button.active { color: var(--text); text-decoration: underline; text-underline-offset: 4px; }
   .site { color: var(--text-soft); padding: 4px 0; }
-  .tag { font: 500 12px/1 var(--mono); color: var(--earth); border: 1px solid color-mix(in srgb, var(--earth) 50%, transparent); border-radius: 3px; padding: 2px 4px; margin-left: 6px; }
+  .tag { font: 500 12px/1 var(--mono); color: var(--text-soft); border: 1px dashed var(--line-strong); border-radius: 3px; padding: 2px 4px; margin-left: 6px; }
   .remove { color: var(--text-dim); margin-left: 4px; display: inline-grid; place-items: center; min-width: 24px; min-height: 24px; vertical-align: middle; }
   @media (hover: hover) and (pointer: fine) { .remove:hover { color: var(--danger); } }
 </style>

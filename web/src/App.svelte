@@ -346,7 +346,7 @@
   .dot.earth { background: var(--earth); }
   .light, .out { margin: 12px 0 0; font-size: 12px; color: var(--text-dim); }
   .psr { margin: 12px 0 0; font-size: 13px; line-height: 1.45; color: var(--text-soft); border-top: 1px solid var(--line); padding-top: 10px; }
-  .psr strong, .psr-detail strong { color: var(--earth); }
+  .psr strong, .psr-detail strong { color: var(--text); }
   .psr-detail { max-width: 70ch; color: var(--text-soft); line-height: 1.55; margin: -12px 0 28px; }
 
   .verdict { padding: 4px 10px 18px; border-bottom: 1px solid var(--line); margin-bottom: 14px; }

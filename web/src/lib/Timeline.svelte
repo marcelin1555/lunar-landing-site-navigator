@@ -56,7 +56,7 @@
     {#each earthRuns as r}
       <rect class="earth" x={m.left + (r.a - i0) * w} y={row + 4} width={(r.b - r.a) * w + 0.5} height={row - 4} />
     {/each}
-    {#each x.ticks(timeDay.every(5)!) as t}
+    {#each x.ticks(timeDay.every(width < 520 ? 10 : 5)!) as t}
       <line class="tickline" x1={x(t)} x2={x(t)} y1="0" y2={row * 2 + 6} />
       <text class="tick" x={x(t)} y={row * 2 + 22} text-anchor="middle">
         {t.toISOString().slice(5, 10)}

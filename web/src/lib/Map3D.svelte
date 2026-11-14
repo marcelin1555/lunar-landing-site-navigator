@@ -121,7 +121,7 @@
       for (const lat of [-88, -85, -82]) {
         const pts = Array.from({ length: 180 }, (_, k) => toScene(meOf(lat, k * 2, 9)));
         const ring = new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints(pts),
-          new THREE.LineBasicMaterial({ color: 0x4fa8e8, transparent: true, opacity: 0.22, depthTest: false }));
+          new THREE.LineBasicMaterial({ color: 0x8995a6, transparent: true, opacity: 0.25, depthTest: false }));
         ring.renderOrder = 1;
         scene.add(ring);
       }
@@ -161,8 +161,9 @@
     for (const s of sites) {
       const on = s.id === selected, hot = s.id === hoverId;
       const pin = new THREE.Mesh(
-        new THREE.CylinderGeometry(on || hot ? 1.8 : 1.1, 0.15, 18, 10),
-        new THREE.MeshBasicMaterial({ color: on || hot ? 0xffffff : s.custom ? 0x4fa8e8 : 0x9aa6b6 }),
+        // custom points: square pins, so they read apart by shape; blue stays for Earth only
+        new THREE.CylinderGeometry(on || hot ? 1.8 : 1.1, 0.15, 18, s.custom ? 4 : 10),
+        new THREE.MeshBasicMaterial({ color: on || hot ? 0xffffff : s.custom ? 0xd8dee8 : 0x9aa6b6 }),
       );
       pin.position.copy(surface(s.lat, s.lon, 9));
       pin.userData.id = s.id;
