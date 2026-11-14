@@ -5,6 +5,7 @@
   import SiteTable from "./lib/SiteTable.svelte";
   import AddPoint from "./lib/AddPoint.svelte";
   import Map3D from "./lib/Map3D.svelte";
+  import Compare from "./lib/Compare.svelte";
   import { computePoint, loadSaved, save, newId, validate, sunLonAt, type CustomPoint } from "./lib/custom";
   import {
     loadIndex, loadSite, indexAt, hoursUntilChange, sunUp, earthUp, horizonAt,
@@ -21,6 +22,21 @@
   let computed = $state<Record<string, Site>>({});
   let busy = $state(false);
   let sunLon = $state<number | null>(null);
+  let compare = $state<string[]>([]);
+  let compareSites = $state<Site[]>([]);
+  $effect(() => {
+    const ids = [...compare];
+    Promise.all(ids.map((id) => {
+      const p = points.find((q) => q.id === id);
+      return p ? (computed[id] ? Promise.resolve(computed[id]) : computePoint(p)) : loadSite(id);
+    }))
+      .then((list) => { if (ids.join() === compare.join()) compareSites = list; })
+      .catch((e) => (error = (e as Error).message));
+  });
+  function toggleCompare(id: string) {
+    compare = compare.includes(id) ? compare.filter((c) => c !== id) : [...compare, id].slice(0, 3);
+  }
+  const windowH = $derived(meta ? (Date.parse(meta.window_utc[1] + "Z") - Date.parse(meta.window_utc[0] + "Z")) / 3.6e6 + 1 : Infinity);
   $effect(() => {
     const d = date;
     sunLonAt(d).then((v) => (sunLon = v)).catch(() => (sunLon = null));
@@ -37,6 +53,8 @@
       meta = idx.meta;
       sites = idx.sites;
       points = loadSaved();
+      const cmp = new URLSearchParams(location.search).get("cmp"); // e.g. ?cmp=malapert-massif,shackleton-rim
+      if (cmp) compare = cmp.split(",").filter((id) => sites.some((s) => s.id === id)).slice(0, 3);
       const hash = location.hash.slice(1);
       const shared = hash.match(/^at=(-?[\d.]+),(-?[\d.]+)$/);
       if (shared) await addPoint("Shared point", Number(shared[1]), Number(shared[2]));
@@ -81,6 +99,7 @@
 
   function removePoint(id: string) {
     points = points.filter((p) => p.id !== id);
+    compare = compare.filter((c) => c !== id);
     delete computed[id];
     save(points);
     if (selected === id) select(sites[0].id);
@@ -135,7 +154,7 @@
 <main>
   <aside>
     {#if sites.length}
-      <SiteTable sites={allSites} {selected} onselect={select} onremove={removePoint} />
+      <SiteTable sites={allSites} {selected} {compare} {windowH} onselect={select} onremove={removePoint} ontoggle={toggleCompare} />
       <AddPoint onadd={addPoint} {busy} />
     {:else if !error}
       <p class="muted">Loading sites…</p>
@@ -183,6 +202,10 @@
         </div>
       {:else}
         <p class="muted">The selected time is outside the computed window ({meta?.window_utc[0]} to {meta?.window_utc[1]} UTC).</p>
+      {/if}
+
+      {#if compareSites.length >= 2}
+        <Compare sites={compareSites} {date} onpick={(d) => (date = d)} onremove={toggleCompare} />
       {/if}
 
       <figure>

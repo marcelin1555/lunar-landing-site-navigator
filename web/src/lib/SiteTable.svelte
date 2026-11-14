@@ -1,7 +1,11 @@
 <script lang="ts">
   import type { SiteIndex, Summary } from "./data";
 
-  let { sites, selected, onselect, onremove }: { sites: SiteIndex[]; selected: string; onselect: (id: string) => void; onremove: (id: string) => void } = $props();
+  let { sites, selected, compare, windowH, onselect, onremove, ontoggle }: {
+    sites: SiteIndex[]; selected: string; compare: string[]; windowH: number;
+    onselect: (id: string) => void; onremove: (id: string) => void; ontoggle: (id: string) => void;
+  } = $props();
+  const MAX_COMPARE = 3;
 
   const cols: { key: keyof Summary; label: string; unit: string; best: "max" | "min" }[] = [
     { key: "sunlit_pct", label: "Sunlit", unit: "%", best: "max" },
@@ -27,9 +31,10 @@
 </script>
 
 <table>
-  <caption>Candidate sites, Nov 2026 to Dec 2028</caption>
+  <caption>Candidate sites, Nov 2026 to Dec 2028. Tick up to {MAX_COMPARE} to compare.</caption>
   <thead>
     <tr>
+      <th scope="col" class="cmp"><span class="sr">Compare</span></th>
       <th scope="col">Site</th>
       {#each cols as c}
         <th scope="col" class="num" aria-sort={sortKey === c.key ? (c.best === "max" ? "descending" : "ascending") : "none"}>
@@ -41,6 +46,10 @@
   <tbody>
     {#each rows as s (s.id)}
       <tr class:selected={s.id === selected} onclick={() => onselect(s.id)}>
+        <td class="cmp">
+          <input type="checkbox" checked={compare.includes(s.id)} onclick={(e) => e.stopPropagation()} onchange={() => ontoggle(s.id)}
+            disabled={!compare.includes(s.id) && compare.length >= MAX_COMPARE} aria-label="Compare {s.name}" />
+        </td>
         <th scope="row">
           <button class="site" onclick={(e) => { e.stopPropagation(); onselect(s.id); }} aria-pressed={s.id === selected}>{s.name}</button>
           {#if s.custom}
@@ -49,7 +58,9 @@
           {/if}
         </th>
         {#each cols as c}
-          <td class="num" class:best={s.summary[c.key] === bestOf[c.key]}>{s.summary[c.key].toFixed(c.unit === "%" ? 1 : 0)}<span class="unit">{c.unit}</span></td>
+          <td class="num" class:best={s.summary[c.key] === bestOf[c.key]}>
+            {#if c.unit === "h" && s.summary[c.key] >= windowH}never lit{:else}{s.summary[c.key].toFixed(c.unit === "%" ? 1 : 0)}<span class="unit">{c.unit}</span>{/if}
+          </td>
         {/each}
       </tr>
     {/each}
@@ -58,6 +69,10 @@
 
 <style>
   table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .cmp { width: 28px; padding-right: 0; }
+  .cmp input { accent-color: var(--sun); width: 15px; height: 15px; margin: 0; cursor: pointer; vertical-align: middle; }
+  .cmp input:disabled { cursor: not-allowed; opacity: 0.35; }
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
   caption { text-align: left; color: var(--text-dim); font-size: 12px; padding: 0 10px 10px; }
   th, td { padding: 8px 10px; border-bottom: 1px solid var(--line); text-align: left; font-weight: 400; }
   thead th { color: var(--text-dim); font-size: 12px; }
