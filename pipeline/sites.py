@@ -40,7 +40,7 @@ def best_lit(folder):
     with rasterio.open(f"{PGDA}/LOLA_5mpp/{folder}/{folder}_final_adj_5mpp_surf.tif") as d:
         b = d.bounds
     with rasterio.open(ILLUM) as m:
-        win = from_bounds(*b, transform=m.transform)
+        win = from_bounds(*b, transform=m.transform).round_offsets().round_lengths()  # integer pixels so the transform matches the read
         a = m.read(1, window=win, masked=True)
         r, c = np.unravel_index(np.argmax(a), a.shape)
         x, y = rasterio.transform.xy(m.window_transform(win), r, c)

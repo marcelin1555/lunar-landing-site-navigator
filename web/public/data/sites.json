@@ -1,0 +1,161 @@
+{
+ "meta": {
+  "window_utc": [
+   "2026-11-01T00:00",
+   "2028-12-31T23:00"
+  ],
+  "step_s": 3600,
+  "observer_height_m": 2.0,
+  "dem": "LOLA LDEM_75S_120M (PDS), 120 m/px polar stereographic",
+  "kernels": [
+   "naif0012.tls",
+   "pck00011.tpc",
+   "de440s.bsp",
+   "moon_pa_de440_200625.bpc",
+   "moon_de440_250416.tf"
+  ],
+  "notes": "No refraction (airless). Sun as uniform disk; Earth visible when its center is above the horizon."
+ },
+ "sites": [
+  {
+   "id": "connecting-ridge",
+   "name": "Connecting Ridge",
+   "lat": -89.53432,
+   "lon": 209.94767,
+   "source": "LPSC 2024 abstract 1695",
+   "summary": {
+    "sunlit_pct": 57.8,
+    "earth_visible_pct": 49.7,
+    "sun_and_earth_pct": 31.7,
+    "longest_dark_h": 501.0,
+    "longest_no_earth_h": 359.0
+   }
+  },
+  {
+   "id": "peak-near-shackleton",
+   "name": "Peak near Shackleton",
+   "lat": -89.01701,
+   "lon": 126.27302,
+   "source": "LPSC 2024 abstract 1695",
+   "summary": {
+    "sunlit_pct": 36.3,
+    "earth_visible_pct": 51.4,
+    "sun_and_earth_pct": 20.6,
+    "longest_dark_h": 703.0,
+    "longest_no_earth_h": 346.0
+   }
+  },
+  {
+   "id": "mons-mouton",
+   "name": "Mons Mouton",
+   "lat": -84.528,
+   "lon": 30.719,
+   "source": "LPSC 2025 abstract 2742",
+   "summary": {
+    "sunlit_pct": 27.5,
+    "earth_visible_pct": 57.6,
+    "sun_and_earth_pct": 22.1,
+    "longest_dark_h": 681.0,
+    "longest_no_earth_h": 301.0
+   }
+  },
+  {
+   "id": "shackleton-rim",
+   "name": "Shackleton Rim",
+   "lat": -89.68708,
+   "lon": 197.28919,
+   "source": "Best-lit 120 m pixel (PGDA mean solar-disc visibility 90%) in PGDA LOLA 5 m site box Site04",
+   "summary": {
+    "sunlit_pct": 87.3,
+    "earth_visible_pct": 49.8,
+    "sun_and_earth_pct": 45.3,
+    "longest_dark_h": 74.0,
+    "longest_no_earth_h": 350.0
+   }
+  },
+  {
+   "id": "nobile-rim-1",
+   "name": "Nobile Rim 1",
+   "lat": -85.30405,
+   "lon": 37.0581,
+   "source": "Best-lit 120 m pixel (PGDA mean solar-disc visibility 86%) in PGDA LOLA 5 m site box Site06",
+   "summary": {
+    "sunlit_pct": 88.3,
+    "earth_visible_pct": 57.2,
+    "sun_and_earth_pct": 48.6,
+    "longest_dark_h": 243.0,
+    "longest_no_earth_h": 302.0
+   }
+  },
+  {
+   "id": "de-gerlache-rim",
+   "name": "de Gerlache Rim",
+   "lat": -88.70412,
+   "lon": 291.59023,
+   "source": "Best-lit 120 m pixel (PGDA mean solar-disc visibility 80%) in PGDA LOLA 5 m site box Site11",
+   "summary": {
+    "sunlit_pct": 79.3,
+    "earth_visible_pct": 57.3,
+    "sun_and_earth_pct": 46.7,
+    "longest_dark_h": 148.0,
+    "longest_no_earth_h": 306.0
+   }
+  },
+  {
+   "id": "leibnitz-beta",
+   "name": "Leibnitz Beta Plateau",
+   "lat": -85.41351,
+   "lon": 31.70947,
+   "source": "Best-lit 120 m pixel (PGDA mean solar-disc visibility 80%) in PGDA LOLA 5 m site box Site20",
+   "summary": {
+    "sunlit_pct": 79.3,
+    "earth_visible_pct": 64.1,
+    "sun_and_earth_pct": 45.8,
+    "longest_dark_h": 402.0,
+    "longest_no_earth_h": 257.0
+   }
+  },
+  {
+   "id": "malapert-massif",
+   "name": "Malapert Massif",
+   "lat": -85.96792,
+   "lon": 357.72287,
+   "source": "Best-lit 120 m pixel (PGDA mean solar-disc visibility 85%) in PGDA LOLA 5 m site box Site23",
+   "summary": {
+    "sunlit_pct": 83.6,
+    "earth_visible_pct": 74.0,
+    "sun_and_earth_pct": 59.6,
+    "longest_dark_h": 264.0,
+    "longest_no_earth_h": 188.0
+   }
+  },
+  {
+   "id": "haworth",
+   "name": "Haworth",
+   "lat": -86.368,
+   "lon": 336.74405,
+   "source": "Best-lit 120 m pixel (PGDA mean solar-disc visibility 75%) in PGDA LOLA 5 m site box Haworth",
+   "summary": {
+    "sunlit_pct": 75.3,
+    "earth_visible_pct": 62.5,
+    "sun_and_earth_pct": 44.4,
+    "longest_dark_h": 317.0,
+    "longest_no_earth_h": 267.0
+   }
+  },
+  {
+   "id": "nobile-rim-2",
+   "name": "Nobile Rim 2",
+   "lat": -83.72496,
+   "lon": 59.42007,
+   "source": "Best-lit 120 m pixel (PGDA mean solar-disc visibility 54%) in PGDA LOLA 5 m site box DM2",
+   "summary": {
+    "sunlit_pct": 53.4,
+    "earth_visible_pct": 74.0,
+    "sun_and_earth_pct": 39.6,
+    "longest_dark_h": 367.0,
+    "longest_no_earth_h": 189.0
+   }
+  }
+ ]
+}

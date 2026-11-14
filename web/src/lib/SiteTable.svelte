@@ -45,7 +45,7 @@
           <button class="site" onclick={(e) => { e.stopPropagation(); onselect(s.id); }} aria-pressed={s.id === selected}>{s.name}</button>
         </th>
         {#each cols as c}
-          <td class="num" class:best={s.summary[c.key] === bestOf[c.key]}>{s.summary[c.key]}<span class="unit">{c.unit}</span></td>
+          <td class="num" class:best={s.summary[c.key] === bestOf[c.key]}>{s.summary[c.key].toFixed(c.unit === "%" ? 1 : 0)}<span class="unit">{c.unit}</span></td>
         {/each}
       </tr>
     {/each}

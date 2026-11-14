@@ -23,43 +23,43 @@
   {
     "id": "shackleton-rim",
     "name": "Shackleton Rim",
-    "lat": -89.68834,
-    "lon": 197.36126,
+    "lat": -89.68708,
+    "lon": 197.28919,
     "source": "Best-lit 120 m pixel (PGDA mean solar-disc visibility 90%) in PGDA LOLA 5 m site box Site04"
   },
   {
     "id": "nobile-rim-1",
     "name": "Nobile Rim 1",
-    "lat": -85.30246,
-    "lon": 37.08376,
+    "lat": -85.30405,
+    "lon": 37.0581,
     "source": "Best-lit 120 m pixel (PGDA mean solar-disc visibility 86%) in PGDA LOLA 5 m site box Site06"
   },
   {
     "id": "de-gerlache-rim",
     "name": "de Gerlache Rim",
-    "lat": -88.70315,
-    "lon": 291.6986,
+    "lat": -88.70412,
+    "lon": 291.59023,
     "source": "Best-lit 120 m pixel (PGDA mean solar-disc visibility 80%) in PGDA LOLA 5 m site box Site11"
   },
   {
     "id": "leibnitz-beta",
     "name": "Leibnitz Beta Plateau",
-    "lat": -85.4142,
-    "lon": 31.69545,
+    "lat": -85.41351,
+    "lon": 31.70947,
     "source": "Best-lit 120 m pixel (PGDA mean solar-disc visibility 80%) in PGDA LOLA 5 m site box Site20"
   },
   {
     "id": "malapert-massif",
     "name": "Malapert Massif",
-    "lat": -85.96797,
-    "lon": 357.74159,
+    "lat": -85.96792,
+    "lon": 357.72287,
     "source": "Best-lit 120 m pixel (PGDA mean solar-disc visibility 85%) in PGDA LOLA 5 m site box Site23"
   },
   {
     "id": "haworth",
     "name": "Haworth",
-    "lat": -86.36705,
-    "lon": 336.76181,
+    "lat": -86.368,
+    "lon": 336.74405,
     "source": "Best-lit 120 m pixel (PGDA mean solar-disc visibility 75%) in PGDA LOLA 5 m site box Haworth"
   },
   {
