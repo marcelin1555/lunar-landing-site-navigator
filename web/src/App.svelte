@@ -148,13 +148,13 @@
   <p class="error" role="alert">{error} Reload the page to try again.</p>
 {/if}
 
-<Map3D sites={allSites} {selected} {sunLon} onselect={select}
+<Map3D sites={allSites} {selected} {sunLon} {busy} onselect={select}
   onpick={(lat, lon) => addPoint(`Point ${Math.abs(lat).toFixed(3)}°S ${lon.toFixed(3)}°E`, lat, lon)} />
 
 <main>
   <aside>
     {#if sites.length}
-      <SiteTable sites={allSites} {selected} {compare} {windowH} onselect={select} onremove={removePoint} ontoggle={toggleCompare} />
+      <div class="scroll-x"><SiteTable sites={allSites} {selected} {compare} {windowH} onselect={select} onremove={removePoint} ontoggle={toggleCompare} /></div>
       <AddPoint onadd={addPoint} {busy} />
     {:else if !error}
       <p class="muted">Loading sites…</p>
@@ -209,7 +209,10 @@
       {/if}
 
       <figure>
-        <figcaption>Horizon seen from the site, with the Sun and Earth paths for the next 14 days</figcaption>
+        <figcaption>
+          Horizon seen from the site, with the Sun and Earth paths for the next 14 days
+          <span class="key"><i class="k-terrain"></i>terrain <i class="k-sun"></i>Sun path <i class="k-earth"></i>Earth path <i class="k-dot"></i>now</span>
+        </figcaption>
         <Skyline {site} index={i} />
       </figure>
 
@@ -262,13 +265,22 @@
 
   figure { margin: 0 0 28px; }
   figcaption { color: var(--text-dim); font-size: 12px; margin-bottom: 10px; }
+  figcaption { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 16px; }
+  .key { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; font-family: var(--mono); }
+  .key i { display: inline-block; width: 14px; height: 2px; margin-right: 2px; vertical-align: middle; }
+  .k-terrain { background: var(--ridge); height: 8px !important; border-top: 2px solid var(--ridge); background: var(--terrain) !important; }
+  .k-sun { background: var(--sun); }
+  .k-earth { background: var(--earth); }
+  .k-dot { width: 8px !important; height: 8px !important; border-radius: 50%; background: var(--text-soft); }
   footer { border-top: 1px solid var(--line); padding-top: 14px; color: var(--text-dim); font-size: 12px; line-height: 1.6; max-width: 90ch; }
   footer strong { color: var(--text-soft); font-weight: 600; }
+  .scroll-x { overflow-x: auto; }
   .muted { color: var(--text-dim); padding: 0 10px; }
   .error { margin: 16px 24px 0; padding: 10px 14px; border: 1px solid var(--danger); border-radius: 4px; color: var(--danger); }
 
   @media (max-width: 900px) {
-    main { grid-template-columns: 1fr; }
+    main { grid-template-columns: minmax(0, 1fr); }
+    header { padding: 16px; }
     aside { border-right: 0; border-bottom: 1px solid var(--line); }
     .detail { padding: 16px; }
     .readout { grid-template-columns: 1fr; }

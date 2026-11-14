@@ -5,7 +5,8 @@
   import { fromStereo, stereoSouth } from "./free";
   import type { SiteIndex } from "./data";
 
-  let { sites, selected, sunLon, onpick, onselect }: {
+  let { sites, selected, sunLon, busy = false, onpick, onselect }: {
+    busy?: boolean;
     sites: SiteIndex[];
     selected: string;
     sunLon: number | null; // longitude of the subsolar direction, drives the light azimuth
@@ -19,6 +20,7 @@
   let width = $state(400);
   let height = $state(440);
   let hover = $state<{ lat: number; lon: number } | null>(null);
+  let hoverPin = $state<string | null>(null);
   let labels = $state<{ id: string; name: string; x: number; y: number; on: boolean; custom: boolean }[]>([]);
   let failed = $state("");
 
@@ -143,7 +145,7 @@
     labels = pins.children.map((p) => {
       v.copy(p.position).add(new THREE.Vector3(0, 14, 0)).project(camera);
       const s = sites.find((q) => q.id === p.userData.id)!;
-      return { id: s.id, name: s.name, x: (v.x * 0.5 + 0.5) * width, y: (-v.y * 0.5 + 0.5) * height, on: s.id === selected && v.z < 1, custom: !!s.custom };
+      return { id: s.id, name: s.name, x: (v.x * 0.5 + 0.5) * width, y: (-v.y * 0.5 + 0.5) * height, on: (s.id === selected || s.id === hoverPin) && v.z < 1, custom: !!s.custom };
     });
   }
 
@@ -184,6 +186,7 @@
     if (!renderer) return;
     const h = hit(e);
     hover = h?.kind === "ground" ? h : null;
+    hoverPin = h?.kind === "pin" ? h.id : null;
     renderer.domElement.style.cursor = h ? "pointer" : "grab";
   }
   function onUp(e: PointerEvent) {
@@ -195,7 +198,7 @@
   }
 </script>
 
-<div class="map" bind:this={host} bind:clientWidth={width} onpointerdown={onDown} onpointermove={onMove} onpointerup={onUp}
+<div class="map" bind:this={host} bind:clientWidth={width} bind:clientHeight={height} onpointerdown={onDown} onpointermove={onMove} onpointerup={onUp}
   role="application" aria-label="3D terrain of the lunar south pole. Click a pin to select a site, or click the terrain to compute a new point.">
   {#if failed}
     <p class="fail">{failed}</p>
@@ -204,7 +207,7 @@
     {#if l.on}<span class="label" style:left="{l.x}px" style:top="{l.y}px">{l.name}</span>{/if}
   {/each}
   <div class="hud">
-    <span>{hover ? `${Math.abs(hover.lat).toFixed(3)}°S ${hover.lon.toFixed(3)}°E` : "Drag to orbit · click terrain to compute"}</span>
+    <span>{busy ? "Computing point…" : hover ? `${Math.abs(hover.lat).toFixed(3)}°S ${hover.lon.toFixed(3)}°E` : "Drag to orbit · click a pin or the terrain"}</span>
     <span class="legend"><i class="ramp"></i>PGDA mean sunlight · 4× relief</span>
   </div>
 </div>
@@ -216,5 +219,6 @@
   .hud { position: absolute; left: 10px; right: 10px; bottom: 8px; display: flex; justify-content: space-between; gap: 8px; font: 500 11px/1.2 var(--mono); color: var(--text-dim); pointer-events: none; }
   .legend { display: flex; align-items: center; gap: 6px; }
   .ramp { width: 36px; height: 6px; border-radius: 1px; background: linear-gradient(90deg, #06080c, #ddd6c6); outline: 1px solid var(--line-strong); }
+  @media (max-width: 600px) { .map { height: 320px; } .legend { display: none; } }
   .fail { position: absolute; inset: 0; display: grid; place-items: center; padding: 24px; text-align: center; color: var(--text-dim); margin: 0; }
 </style>

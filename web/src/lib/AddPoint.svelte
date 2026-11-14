@@ -80,6 +80,10 @@
   button:disabled { opacity: 0.6; cursor: progress; }
   input:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
   .search { margin-bottom: 10px; }
+  @media (max-width: 520px) {
+    .fields { grid-template-columns: 1fr 1fr; }
+    .fields label:first-child, .fields button { grid-column: 1 / -1; }
+  }
   .hint { color: var(--text-soft); margin: -2px 0 10px; }
   .error { color: var(--danger); margin: 8px 0 0; }
 </style>
