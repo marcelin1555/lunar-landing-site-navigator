@@ -4,7 +4,8 @@
   import Timeline from "./lib/Timeline.svelte";
   import SiteTable from "./lib/SiteTable.svelte";
   import AddPoint from "./lib/AddPoint.svelte";
-  import { computePoint, loadSaved, save, newId, validate, type CustomPoint } from "./lib/custom";
+  import Map3D from "./lib/Map3D.svelte";
+  import { computePoint, loadSaved, save, newId, validate, sunLonAt, type CustomPoint } from "./lib/custom";
   import {
     loadIndex, loadSite, indexAt, hoursUntilChange, sunUp, earthUp, horizonAt,
     fmtDuration, fmtDeg, fmtLatLon, type Meta, type Site, type SiteIndex,
@@ -19,6 +20,11 @@
   let points = $state<CustomPoint[]>([]);
   let computed = $state<Record<string, Site>>({});
   let busy = $state(false);
+  let sunLon = $state<number | null>(null);
+  $effect(() => {
+    const d = date;
+    sunLonAt(d).then((v) => (sunLon = v)).catch(() => (sunLon = null));
+  });
 
   const allSites = $derived<SiteIndex[]>([
     ...sites,
@@ -60,7 +66,11 @@
   }
 
   async function addPoint(name: string, lat: number, lon: number) {
-    if (validate(lat, lon)) return;
+    const invalid = validate(lat, lon);
+    if (invalid) {
+      error = invalid;
+      return;
+    }
     busy = true;
     const p = { id: newId(), name, lat, lon };
     points = [...points, p];
@@ -118,6 +128,9 @@
 {#if error}
   <p class="error" role="alert">{error} Reload the page to try again.</p>
 {/if}
+
+<Map3D sites={allSites} {selected} {sunLon} onselect={select}
+  onpick={(lat, lon) => addPoint(`Point ${Math.abs(lat).toFixed(3)}°S ${lon.toFixed(3)}°E`, lat, lon)} />
 
 <main>
   <aside>

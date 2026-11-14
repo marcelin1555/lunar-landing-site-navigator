@@ -57,3 +57,11 @@ export function save(points: CustomPoint[]) {
 }
 
 export const newId = () => `custom-${Date.now().toString(36)}`;
+
+/** Longitude (deg E) of the Sun direction at date, from the precomputed SPICE vectors; null outside the window. */
+export async function sunLonAt(date: Date): Promise<number | null> {
+  const { meta, sky } = await loadFree();
+  const i = Math.floor((date.getTime() - Date.parse(meta.start_utc)) / (meta.step_s * 1000));
+  if (i < 0 || i >= meta.n_times) return null;
+  return (Math.atan2(sky[i * 6 + 1], sky[i * 6]) * 180) / Math.PI;
+}

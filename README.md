@@ -16,7 +16,15 @@ This app shows when the Sun and the Earth can be seen from candidate landing sit
    - Earth: whether its center is above the horizon.
 4. **Summaries.** For each site: % of time sunlit, % of time with Earth in view, % with both, longest night, and longest Earth blackout.
 
-The pipeline (`pipeline/`, Python) writes one JSON file per site. The web app (`web/`, Svelte + D3) is static and only reads those files.
+The pipeline (`pipeline/`, Python) writes one JSON file per site. The web app (`web/`, Svelte + D3 + three.js) is static and only reads those files.
+
+**Any point, in the browser.** Click the 3D terrain, type coordinates, or search an IAU feature name. The browser then repeats the same math on a 240 m tiled DEM, using Sun and Earth vectors precomputed with SPICE. It loads only the tiles around the point and takes about 0.2 s. `web/scripts/validate-free.ts` checks it against the 10 pipeline sites:
+- Sun and Earth paths match exactly.
+- Sunlit share differs by 1.5 points on average.
+
+On sharp summits the horizon is the slope just below the observer, so Earth visibility there is sensitive to DEM resolution. The app says so.
+
+Crater floors such as Shackleton, Haworth and Faustini come out at 0% Sun and 0% Earth. These are permanently shadowed regions, where water ice may be.
 
 ## Validation
 
@@ -55,11 +63,14 @@ AI assistance (Claude, by Anthropic) was used for research, architecture discuss
 - NAIF SPICE generic kernels (de440s, moon_pa_de440_200625, moon_de440_250416, pck00011, naif0012): https://naif.jpl.nasa.gov/pub/naif/generic_kernels/
 - JPL Horizons API, used for validation: https://ssd.jpl.nasa.gov/horizons/
 
+- PGDA mean solar visibility map `AVGVISIB_75S_120M_201608`, used to color the 3D terrain.
+- IAU Gazetteer of Planetary Nomenclature (USGS), lunar center points: https://planetarynames.wr.usgs.gov/GIS_Downloads
+
 **Site coordinates**
 - LPSC 2024 abstract #1695: Connecting Ridge, Peak near Shackleton.
 - LPSC 2025 abstract #2742: Mons Mouton.
 
 **Software**
 - NumPy, SciPy, SpiceyPy, rasterio and GDAL, pytest.
-- Svelte, Vite, D3.
+- Svelte, Vite, D3, three.js.
 - IBM Plex fonts (SIL OFL), via Fontsource.
