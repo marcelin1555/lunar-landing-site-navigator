@@ -8,7 +8,7 @@
 
 | # | Time | What is on screen | Subtitle |
 |---|---|---|---|
-| 1 | 0–4 s | Full app at load, slowly orbiting the 3D south pole (drag) | Where should Artemis land? Sunlight means power. Earth in view means a direct link home. |
+| 1 | 0–4 s | Full app at load; press **Play**: shadows sweep across the real south pole as the Sun circles | Where should Artemis land? Sunlight means power. Earth in view means a direct link home. |
 | 2 | 4–9 s | Click the **Shackleton Rim** pin; the readout and skyline update | Real terrain from NASA's LOLA, Sun and Earth from SPICE. The real horizon, hour by hour. |
 | 3 | 9–14 s | Type "Shackleton" in the feature search, click Compute; the skyline turns into a wall | 10 km away, the crater floor: a 20° wall. 0% Sun, 0% Earth in two years. Permanent shadow, where ice hides. |
 | 4 | 14–21 s | Open the compare link (Malapert, Shackleton Rim, Nobile Rim 1); hover the table | Landing today? Shackleton Rim gets more Sun overall, but Malapert gives 22 days of Sun *and* Earth vs 13. |

@@ -38,6 +38,7 @@ Crater floors such as Shackleton, Haworth and Faustini come out at 0% Sun and 0%
 - There is no atmosphere, so no refraction. The Sun is modeled as a uniform disk.
 - Earth counts as visible when its center is above the terrain. Real links also depend on antenna height and relays.
 - Energy is shown as hours of sunlight, not watts.
+- The 3D view is a visual guide. It uses a 1.2 km mesh at true scale and true curvature, lit from the real Sun direction (SPICE) with a shadow map. Every number in the app comes from the 120 m analysis (240 m for custom points), not from the 3D rendering.
 
 ## Run
 
