@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { SiteIndex, Summary } from "./data";
 
-  let { sites, selected, onselect }: { sites: SiteIndex[]; selected: string; onselect: (id: string) => void } = $props();
+  let { sites, selected, onselect, onremove }: { sites: SiteIndex[]; selected: string; onselect: (id: string) => void; onremove: (id: string) => void } = $props();
 
   const cols: { key: keyof Summary; label: string; unit: string; best: "max" | "min" }[] = [
     { key: "sunlit_pct", label: "Sunlit", unit: "%", best: "max" },
@@ -43,6 +43,10 @@
       <tr class:selected={s.id === selected} onclick={() => onselect(s.id)}>
         <th scope="row">
           <button class="site" onclick={(e) => { e.stopPropagation(); onselect(s.id); }} aria-pressed={s.id === selected}>{s.name}</button>
+          {#if s.custom}
+            <span class="tag">custom</span>
+            <button class="remove" onclick={(e) => { e.stopPropagation(); onremove(s.id); }} aria-label="Remove {s.name}">×</button>
+          {/if}
         </th>
         {#each cols as c}
           <td class="num" class:best={s.summary[c.key] === bestOf[c.key]}>{s.summary[c.key].toFixed(c.unit === "%" ? 1 : 0)}<span class="unit">{c.unit}</span></td>
@@ -68,4 +72,7 @@
   button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 2px; }
   thead button.active { color: var(--text); text-decoration: underline; text-underline-offset: 4px; }
   .site { color: var(--text-soft); }
+  .tag { font: 500 10px/1 var(--mono); color: var(--earth); border: 1px solid color-mix(in srgb, var(--earth) 50%, transparent); border-radius: 3px; padding: 2px 4px; margin-left: 6px; }
+  .remove { color: var(--text-dim); margin-left: 6px; padding: 0 4px; }
+  .remove:hover { color: var(--danger); }
 </style>

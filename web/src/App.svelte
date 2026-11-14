@@ -3,6 +3,8 @@
   import Skyline from "./lib/Skyline.svelte";
   import Timeline from "./lib/Timeline.svelte";
   import SiteTable from "./lib/SiteTable.svelte";
+  import AddPoint from "./lib/AddPoint.svelte";
+  import { computePoint, loadSaved, save, newId, validate, type CustomPoint } from "./lib/custom";
   import {
     loadIndex, loadSite, indexAt, hoursUntilChange, sunUp, earthUp, horizonAt,
     fmtDuration, fmtDeg, fmtLatLon, type Meta, type Site, type SiteIndex,
@@ -14,14 +16,26 @@
   let site = $state<Site | null>(null);
   let error = $state("");
   let date = $state(new Date());
+  let points = $state<CustomPoint[]>([]);
+  let computed = $state<Record<string, Site>>({});
+  let busy = $state(false);
+
+  const allSites = $derived<SiteIndex[]>([
+    ...sites,
+    ...points.filter((p) => computed[p.id]).map((p) => ({ ...computed[p.id], custom: true })),
+  ]);
 
   onMount(async () => {
     try {
       const idx = await loadIndex();
       meta = idx.meta;
       sites = idx.sites;
-      const fromHash = location.hash.slice(1);
-      select(sites.some((s) => s.id === fromHash) ? fromHash : sites[0].id);
+      points = loadSaved();
+      const hash = location.hash.slice(1);
+      const shared = hash.match(/^at=(-?[\d.]+),(-?[\d.]+)$/);
+      if (shared) await addPoint("Shared point", Number(shared[1]), Number(shared[2]));
+      else select(sites.some((s) => s.id === hash) ? hash : sites[0].id);
+      for (const p of points) if (!computed[p.id]) computed[p.id] = await computePoint(p);
     } catch (e) {
       error = (e as Error).message;
     }
@@ -29,13 +43,37 @@
 
   async function select(id: string) {
     selected = id;
-    history.replaceState(null, "", `#${id}`);
     try {
-      site = await loadSite(id);
+      const p = points.find((q) => q.id === id);
+      if (p) {
+        computed[id] ??= await computePoint(p);
+        site = computed[id];
+        history.replaceState(null, "", `#at=${p.lat},${p.lon}`);
+      } else {
+        site = await loadSite(id);
+        history.replaceState(null, "", `#${id}`);
+      }
       error = "";
     } catch (e) {
       error = (e as Error).message;
     }
+  }
+
+  async function addPoint(name: string, lat: number, lon: number) {
+    if (validate(lat, lon)) return;
+    busy = true;
+    const p = { id: newId(), name, lat, lon };
+    points = [...points, p];
+    save(points);
+    await select(p.id);
+    busy = false;
+  }
+
+  function removePoint(id: string) {
+    points = points.filter((p) => p.id !== id);
+    delete computed[id];
+    save(points);
+    if (selected === id) select(sites[0].id);
   }
 
   const i = $derived(site ? indexAt(site, date) : -1);
@@ -84,7 +122,8 @@
 <main>
   <aside>
     {#if sites.length}
-      <SiteTable {sites} {selected} onselect={select} />
+      <SiteTable sites={allSites} {selected} onselect={select} onremove={removePoint} />
+      <AddPoint onadd={addPoint} {busy} />
     {:else if !error}
       <p class="muted">Loading sites…</p>
     {/if}
@@ -145,6 +184,9 @@
 
       <footer>
         <p><strong>Site source:</strong> {site.source}.</p>
+        {#if points.some((p) => p.id === site?.id)}
+          <p><strong>Accuracy:</strong> custom points use a 240 m DEM. Against the 120 m pipeline the sunlit share differs by 1.5 points on average; on sharp summits, where the horizon is the slope just below your feet, Earth visibility can differ much more.</p>
+        {/if}
         {#if meta}
           <p><strong>Method:</strong> horizon from {meta.dem}, ray-marched over 150 km on great circles, lunar curvature included. Sun and Earth positions from NAIF SPICE ({meta.kernels.join(", ")}), cross-checked against JPL Horizons to within 0.005°. {meta.notes}</p>
         {/if}

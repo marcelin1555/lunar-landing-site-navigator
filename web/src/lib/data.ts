@@ -6,7 +6,7 @@ export type Summary = {
   longest_no_earth_h: number;
 };
 
-export type SiteIndex = { id: string; name: string; lat: number; lon: number; source: string; summary: Summary };
+export type SiteIndex = { id: string; name: string; lat: number; lon: number; source: string; summary: Summary; custom?: boolean };
 
 export type Meta = {
   window_utc: [string, string];
