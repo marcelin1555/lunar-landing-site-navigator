@@ -1,0 +1,29 @@
+1
+00:00:00,000 --> 00:00:04,000
+Onde a Artemis deve pousar?
+Sol é energia. Terra à vista é link direto com casa.
+
+2
+00:00:04,000 --> 00:00:09,000
+Relevo real do LOLA, da NASA. Sol e Terra do SPICE.
+O horizonte real, hora a hora.
+
+3
+00:00:09,000 --> 00:00:14,000
+A 10 km, o fundo da cratera: uma parede de 20°. 0% de Sol e 0% de Terra em dois anos.
+Sombra permanente, onde o gelo se esconde.
+
+4
+00:00:14,000 --> 00:00:21,000
+Pousando hoje? Shackleton Rim tem mais Sol no total,
+mas Malapert dá 22 dias de Sol e Terra contra 13.
+
+5
+00:00:21,000 --> 00:00:26,000
+O lançamento atrasou? Em Malapert, Sol e Terra juntos
+vão de 37% das horas (abr/2028) a 80% (out/2028).
+
+6
+00:00:26,000 --> 00:00:30,000
+Validado com o JPL Horizons (0,005°) e os mapas PGDA da NASA.
+Lunar Landing Site Navigator, por Quiral Labs.
