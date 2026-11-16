@@ -6,6 +6,23 @@
 
 Real NASA terrain · real ephemerides · every hour from Nov 2026 to Dec 2028
 
+<a href="https://marcelin1555.github.io/lunar-landing-site-navigator/"><img alt="Live app" src="https://img.shields.io/badge/live%20app-GitHub%20Pages-2ea44f?style=flat-square"></a>
+<a href="https://youtu.be/x8fPTm4psCg"><img alt="30 second demo" src="https://img.shields.io/badge/demo-30%20s%20video-ff0000?style=flat-square&logo=youtube&logoColor=white"></a>
+<img alt="NASA Space Apps Challenge 2026" src="https://img.shields.io/badge/NASA%20Space%20Apps-2026-0b3d91?style=flat-square">
+<img alt="Team Quiral Labs" src="https://img.shields.io/badge/team-Quiral%20Labs-444?style=flat-square">
+<br>
+<img alt="Validated against JPL Horizons within 0.005 degrees" src="https://img.shields.io/badge/JPL%20Horizons-%C2%B10.005%C2%B0-1f6feb?style=flat-square">
+<img alt="PGDA illumination maps, 1.5 points average difference" src="https://img.shields.io/badge/PGDA%20maps-%C2%B11.5%20pts-1f6feb?style=flat-square">
+<img alt="Terrain from LRO LOLA at 120 m per pixel" src="https://img.shields.io/badge/terrain-LRO%20LOLA%20120%20m-555?style=flat-square">
+<img alt="Ephemerides from NASA SPICE (DE440)" src="https://img.shields.io/badge/ephemerides-NASA%20SPICE%20DE440-555?style=flat-square">
+<br>
+<img alt="Svelte 5" src="https://img.shields.io/badge/Svelte-5-ff3e00?style=flat-square&logo=svelte&logoColor=white">
+<img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-5.8-3178c6?style=flat-square&logo=typescript&logoColor=white">
+<img alt="Vite 6" src="https://img.shields.io/badge/Vite-6-646cff?style=flat-square&logo=vite&logoColor=white">
+<img alt="three.js" src="https://img.shields.io/badge/three.js-0.170-000?style=flat-square&logo=threedotjs&logoColor=white">
+<img alt="D3 7" src="https://img.shields.io/badge/D3-7-f9a03c?style=flat-square&logo=d3dotjs&logoColor=white">
+<img alt="Python" src="https://img.shields.io/badge/pipeline-Python-3776ab?style=flat-square&logo=python&logoColor=white">
+
 [**▶ Open the app**](https://marcelin1555.github.io/lunar-landing-site-navigator/) ·
 [**🎬 30 s demo**](https://youtu.be/x8fPTm4psCg) ·
 [Cinematic view](https://marcelin1555.github.io/lunar-landing-site-navigator/?film) ·
